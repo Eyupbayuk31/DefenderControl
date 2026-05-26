@@ -18,7 +18,47 @@ class Program
         
         AdminHelper.CheckAndElevate();
         
+        // Hosgeldiniz ekrani
+        PrintWelcomeScreen();
+        
         await ShowMainMenuAsync();
+    }
+
+    static void PrintWelcomeScreen()
+    {
+        Console.Clear();
+        
+        // Üst cizgi
+        Console.WriteLine();
+        Console.WriteLine("  ╔" + new string('═', 56) + "╗");
+        
+        // Hosgeldiniz mesaji
+        string welcome = "HOSGELDINIZ!";
+        int padding = (56 - welcome.Length) / 2;
+        Console.WriteLine("  ║" + new string(' ', padding) + AnsiColor(welcome, AnsiColorType.Success) + new string(' ', 56 - padding - welcome.Length) + "║");
+        
+        Console.WriteLine("  ║" + new string('─', 56) + "║");
+        
+        // Aciklama
+        string desc1 = "Windows Defender'i kolayca kontrol edin";
+        string desc2 = "Bu uygulama ile Defender'i acin veya kapatin";
+        padding = (56 - desc1.Length) / 2;
+        Console.WriteLine("  ║" + new string(' ', padding) + AnsiColor(desc1, AnsiColorType.Info) + new string(' ', 56 - padding - desc1.Length) + "║");
+        padding = (56 - desc2.Length) / 2;
+        Console.WriteLine("  ║" + new string(' ', padding) + AnsiColor(desc2, AnsiColorType.Info) + new string(' ', 56 - padding - desc2.Length) + "║");
+        
+        Console.WriteLine("  ║" + new string('─', 56) + "║");
+        
+        // Uyari
+        string warning = "UYARI: Bu uygulama yonetici yetkisi gerektirir!";
+        padding = (56 - warning.Length) / 2;
+        Console.WriteLine("  ║" + new string(' ', padding) + AnsiColor(warning, AnsiColorType.Warning) + new string(' ', 56 - padding - warning.Length) + "║");
+        
+        Console.WriteLine("  ╚" + new string('═', 56) + "╝");
+        Console.WriteLine();
+        
+        AnsiWrite("  Devam etmek icin bir tusa basin...", AnsiColorType.Secondary);
+        Console.ReadKey();
     }
 
     static async Task ShowMainMenuAsync()
@@ -372,7 +412,7 @@ class Program
             AnsiColorType.Error => "\u001b[31m",        // Red
             AnsiColorType.Warning => "\u001b[33m",      // Yellow
             AnsiColorType.Link => "\u001b[94m",         // Blue (link)
-            AnsiColorType.Highlight => "\u001b[1;33m",  // Bold Yellow
+            AnsiColorType.Highlight => "\u001b[1;33m", // Bold Yellow
             _ => "\u001b[0m"
         };
         
