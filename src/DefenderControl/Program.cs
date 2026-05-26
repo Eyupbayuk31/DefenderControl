@@ -14,22 +14,26 @@ class Program
 
     static async Task Main(string[] args)
     {
+        // ANSI renk kodlarini etkinlestir
         AdminHelper.EnableAnsiColors();
         Console.Title = $"Windows Defender Kontrol Paneli - {AppVersion}";
         
+        // Yonetici yetkisi kontrolu yap
         AdminHelper.CheckAndElevate();
         
-        // Hosgeldiniz ekrani
+        // Hosgeldiniz ekrani goster
         PrintWelcomeScreen();
         
+        // Ana menuyu goster
         await ShowMainMenuAsync();
     }
 
+    // Hosgeldiniz ekranini yazdirir
     static void PrintWelcomeScreen()
     {
         Console.Clear();
         
-        // Üst cizgi
+        // Ust cizgi
         Console.WriteLine();
         Console.WriteLine("  ╔" + new string('═', 56) + "╗");
         
@@ -62,6 +66,7 @@ class Program
         Console.ReadKey();
     }
 
+    // Ana menuyu gosterir
     static async Task ShowMainMenuAsync()
     {
         bool exit = false;
@@ -121,6 +126,7 @@ class Program
         PrintGoodbye();
     }
 
+    // Kapatma menusunu gosterir
     static async Task ShowDisableMenuAsync()
     {
         Console.Clear();
@@ -170,6 +176,7 @@ class Program
         }
     }
 
+    // Acma menusunu gosterir
     static async Task ShowEnableMenuAsync()
     {
         Console.Clear();
@@ -219,9 +226,10 @@ class Program
         }
     }
 
+    // Gelistirici ASCII artini yazdirir
     static void PrintDeveloper()
     {
-        // Eyüp ASCII Art
+        // Eyup ASCII Art
         string[] eyupArt = new[]
         {
             "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗",
@@ -239,6 +247,7 @@ class Program
         }
     }
 
+    // Alt bilgi satirini yazdirir
     static void PrintFooter()
     {
         Console.WriteLine();
@@ -246,6 +255,7 @@ class Program
         AnsiWriteLine(Github, AnsiColorType.Link);
     }
 
+    // Menu satirini yazdirir
     static void PrintMenuItem(string number, string title, string description)
     {
         int contentWidth = BoxWidth - 4;
@@ -262,18 +272,19 @@ class Program
         Console.WriteLine($"  +{new string('-', contentWidth - 2)}+");
     }
 
+    // Defender durumunu gosterir
     static async Task ShowStatusAsync()
     {
         AnsiWrite("  [*] Windows Defender durumu aliniyor...\n", AnsiColorType.Warning);
 
         var status = await _defenderService.GetStatusAsync();
 
-        // Status box header
+        // Durum bilgi kutusu basligi
         string headerBox = "+" + AnsiColor($" DURUM BILGILERI ", AnsiColorType.Header) + new string('-', 40) + "+";
         Console.WriteLine($"  {headerBox}");
         Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
         
-        // Protection statuses
+        // Koruma durumlari
         PrintStatusRow("Gercek Zamanli Koruma", status.IsRealTimeProtectionEnabled);
         PrintStatusRow("IOAV Korumasi", status.IsIoavProtectionEnabled);
         PrintStatusRow("Davranis Izleme", status.IsBehaviorMonitorEnabled);
@@ -283,7 +294,7 @@ class Program
         Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
         Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
         
-        // Info rows
+        // Bilgi satirlari
         PrintInfoRow("Son Tarama", status.LastScanTime ?? "Bilinmiyor");
         PrintInfoRow("Virus Tanimlari", status.AntivirusSignatureVersion ?? "Bilinmiyor");
         PrintInfoRow("Casus Yazilim Tanim", status.AntispywareSignatureVersion ?? "Bilinmiyor");
@@ -293,6 +304,7 @@ class Program
         Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
     }
 
+    // Durum satirini yazdirir
     static void PrintStatusRow(string label, bool isEnabled)
     {
         var statusText = isEnabled ? "[AKTIF]" : "[DEVRE DISI]";
@@ -305,6 +317,7 @@ class Program
         Console.WriteLine(new string(' ', padding) + "|");
     }
 
+    // Bilgi satirini yazdirir
     static void PrintInfoRow(string label, string value)
     {
         var displayValue = value.Length > 28 ? value.Substring(0, 25) + "..." : value;
@@ -315,6 +328,7 @@ class Program
         Console.WriteLine(new string(' ', padding) + "|");
     }
 
+    // Cikis ekranini yazdirir
     static void PrintGoodbye()
     {
         string byeBox = "+" + AnsiColor($" GORUSURUZ ", AnsiColorType.Success) + new string('-', 42) + "+";
@@ -324,7 +338,7 @@ class Program
         AnsiWriteLine("  |  Cikis yaptiniz. Guvenli kalin!                  |", AnsiColorType.Success);
         Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
         
-        // Eyüp ASCII Art in goodbye
+        // Eyup ASCII Art cikis ekraninda
         string[] eyupArt = new[]
         {
             "   ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗",
@@ -348,6 +362,7 @@ class Program
         Console.WriteLine();
     }
 
+    // Hata mesajini yazdirir
     static void PrintError(string message)
     {
         AnsiWrite($"  ! {message}", AnsiColorType.Error);
@@ -368,6 +383,7 @@ class Program
         Highlight
     }
 
+    // Metne ANSI renk kodu ekler
     static string AnsiColor(string text, AnsiColorType colorType)
     {
         string colorCode = colorType switch
@@ -387,11 +403,13 @@ class Program
         return $"{colorCode}{text}\u001b[0m";
     }
 
+    // Renkli metin yazdirir
     static void AnsiWrite(string text, AnsiColorType colorType)
     {
         Console.Write(AnsiColor(text, colorType));
     }
 
+    // Renkli metin yazdirir ve satir atlar
     static void AnsiWriteLine(string text, AnsiColorType colorType)
     {
         Console.WriteLine(AnsiColor(text, colorType));
