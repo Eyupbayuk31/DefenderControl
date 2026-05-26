@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using DefenderControl.Models;
+using DefenderControl.Helpers;
 
 namespace DefenderControl.Services;
 
@@ -39,6 +40,7 @@ public class DefenderService
         try
         {
             string mode = permanent ? "kalici" : "gecici";
+            Logger.Log($"Windows Defender devre dışı bırakma işlemi başladı. Mod: {mode}");
             Console.WriteLine($"  [*] Windows Defender ({mode}) devre disi birakiliyor...");
 
             string disableScript;
@@ -47,17 +49,27 @@ public class DefenderService
             {
                 // Kalici - Registry ve Group Policy ile
                 disableScript = @"
+                    # Ensure Registry Paths Exist
+                    $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
+                    $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
+                    
+                    if (!(Test-Path $defenderPath)) {
+                        New-Item -Path $defenderPath -Force | Out-Null
+                    }
+                    if (!(Test-Path $rtPath)) {
+                        New-Item -Path $rtPath -Force | Out-Null
+                    }
+
                     # Disable Real-time Protection
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
                     
                     # Disable via Set-MpPreference
-                    Set-MpPreference -DisableRealtimeMonitoring $true -Force
-                    Set-MpPreference -DisableIOAVProtection $true -Force
-                    Set-MpPreference -DisableBehaviorMonitoring $true -Force
-                    Set-MpPreference -DisableAntivirus $true -Force
+                    Set-MpPreference -DisableRealtimeMonitoring $true -Force -ErrorAction SilentlyContinue
+                    Set-MpPreference -DisableIOAVProtection $true -Force -ErrorAction SilentlyContinue
+                    Set-MpPreference -DisableBehaviorMonitoring $true -Force -ErrorAction SilentlyContinue
                     
                     Write-Output ""SUCCESS_PERMANENT""
                 ";
@@ -69,31 +81,36 @@ public class DefenderService
                     Set-MpPreference -DisableRealtimeMonitoring $true
                     Set-MpPreference -DisableIOAVProtection $true
                     Set-MpPreference -DisableBehaviorMonitoring $true
-                    Set-MpPreference -DisableAntivirus $true
                     Write-Output ""SUCCESS_TEMPORARY""
                 ";
             }
 
+            Logger.Log($"Kapatma scripti çalıştırılıyor...");
             var result = await RunPowerShellAsync(disableScript);
+            Logger.Log($"Kapatma scripti tamamlandı. Çıktı: {result.Trim()}");
             
             if (result.Contains("SUCCESS_PERMANENT"))
             {
+                Logger.Log("Windows Defender kalıcı olarak başarıyla kapatıldı.");
                 Console.WriteLine("  [OK] Windows Defender kalici olarak devre disi birakildu!");
                 Console.WriteLine("       (Sistem yeniden baslatildiktan sonra da devre disi kalacak)");
                 return true;
             }
             else if (result.Contains("SUCCESS_TEMPORARY"))
             {
+                Logger.Log("Windows Defender geçici olarak başarıyla kapatıldı.");
                 Console.WriteLine("  [OK] Windows Defender gecici olarak devre disi birakildu!");
                 Console.WriteLine("       (Sistem yeniden baslatildiginda otomatik acilacak)");
                 return true;
             }
             
+            Logger.Log("Kapatma işlemi başarısız oldu. Beklenen başarı yanıtı alınamadı.", "WARNING");
             Console.WriteLine("  [!] Islem sirinda bir sorun olustu.");
             return false;
         }
         catch (Exception ex)
         {
+            Logger.LogError("Kapatma işlemi sırasında kritik hata oluştu", ex);
             Console.WriteLine($"  [!] Hata: {ex.Message}");
             return false;
         }
@@ -104,6 +121,7 @@ public class DefenderService
         try
         {
             string mode = permanent ? "kalici" : "gecici";
+            Logger.Log($"Windows Defender etkinleştirme işlemi başladı. Mod: {mode}");
             Console.WriteLine($"  [*] Windows Defender ({mode}) etkinlestiriliyor...");
 
             string enableScript;
@@ -116,7 +134,6 @@ public class DefenderService
                     Set-MpPreference -DisableRealtimeMonitoring $false -Force
                     Set-MpPreference -DisableIOAVProtection $false -Force
                     Set-MpPreference -DisableBehaviorMonitoring $false -Force
-                    Set-MpPreference -DisableAntivirus $false -Force
                     
                     # Remove Registry restrictions
                     Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -ErrorAction SilentlyContinue
@@ -134,15 +151,17 @@ public class DefenderService
                     Set-MpPreference -DisableRealtimeMonitoring $false
                     Set-MpPreference -DisableIOAVProtection $false
                     Set-MpPreference -DisableBehaviorMonitoring $false
-                    Set-MpPreference -DisableAntivirus $false
                     Write-Output ""SUCCESS""
                 ";
             }
 
+            Logger.Log($"Etkinleştirme scripti çalıştırılıyor...");
             var result = await RunPowerShellAsync(enableScript);
+            Logger.Log($"Etkinleştirme scripti tamamlandı. Çıktı: {result.Trim()}");
             
             if (result.Contains("SUCCESS"))
             {
+                Logger.Log("Windows Defender başarıyla etkinleştirildi.");
                 Console.WriteLine("  [OK] Windows Defender basariyla etkinlestirildi!");
                 if (permanent)
                 {
@@ -151,11 +170,13 @@ public class DefenderService
                 return true;
             }
             
+            Logger.Log("Etkinleştirme işlemi başarısız oldu. Beklenen başarı yanıtı alınamadı.", "WARNING");
             Console.WriteLine("  [!] Islem sirinda bir sorun olustu.");
             return false;
         }
         catch (Exception ex)
         {
+            Logger.LogError("Etkinleştirme işlemi sırasında kritik hata oluştu", ex);
             Console.WriteLine($"  [!] Hata: {ex.Message}");
             return false;
         }
@@ -163,10 +184,15 @@ public class DefenderService
 
     private async Task<string> RunPowerShellAsync(string script)
     {
+        byte[] scriptBytes = System.Text.Encoding.Unicode.GetBytes(script);
+        string encodedScript = Convert.ToBase64String(scriptBytes);
+
+        Logger.Log($"PowerShell çalıştırılıyor. Script uzunluğu: {script.Length} karakter. Base64 uzunluğu: {encodedScript.Length}");
+
         var psi = new ProcessStartInfo
         {
             FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encodedScript}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -176,6 +202,7 @@ public class DefenderService
         using var process = Process.Start(psi);
         if (process == null)
         {
+            Logger.LogError("PowerShell işlemi başlatılamadı (Process.Start null döndü).");
             throw new InvalidOperationException("PowerShell baslatilamadi.");
         }
 
@@ -186,7 +213,34 @@ public class DefenderService
 
         if (!string.IsNullOrEmpty(error))
         {
-            Console.WriteLine($"  [!] PowerShell hatasi: {error}");
+            // Log everything to the desktop file for debugging
+            Logger.Log($"PowerShell StandardError Çıktısı: {error.Trim()}", "POWERSHELL_ERROR");
+            
+            // Only print actual error messages to the console (filtering out verbose XML progress and preparing module logs)
+            if (!error.Contains("#< CLIXML") || error.Contains("<S S=\"Error\">"))
+            {
+                string cleanError = error;
+                if (error.Contains("<S S=\"Error\">"))
+                {
+                    // Extract and clean actual error if it is in CLIXML format
+                    var matches = System.Text.RegularExpressions.Regex.Matches(error, @"<S S=""Error"">(.*?)<\/S>");
+                    var errorLines = new System.Collections.Generic.List<string>();
+                    foreach (System.Text.RegularExpressions.Match match in matches)
+                    {
+                        string line = match.Groups[1].Value.Replace("_x000D__x000A_", "").Trim();
+                        if (!string.IsNullOrEmpty(line))
+                        {
+                            errorLines.Add(line);
+                        }
+                    }
+                    cleanError = string.Join(Environment.NewLine + "  |  ", errorLines);
+                }
+                
+                if (!string.IsNullOrEmpty(cleanError))
+                {
+                    Console.WriteLine($"  [!] PowerShell hatasi:\n  |  {cleanError}");
+                }
+            }
         }
 
         return output;

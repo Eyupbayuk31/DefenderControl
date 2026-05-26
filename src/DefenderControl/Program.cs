@@ -68,7 +68,6 @@ class Program
         while (!exit)
         {
             Console.Clear();
-            PrintHeader();
             PrintDeveloper();
             PrintFooter();
             
@@ -124,7 +123,6 @@ class Program
     static async Task ShowDisableMenuAsync()
     {
         Console.Clear();
-        PrintHeader();
         PrintDeveloper();
         
         Console.WriteLine();
@@ -174,7 +172,6 @@ class Program
     static async Task ShowEnableMenuAsync()
     {
         Console.Clear();
-        PrintHeader();
         PrintDeveloper();
         
         Console.WriteLine();
@@ -221,45 +218,6 @@ class Program
         }
     }
 
-    static void PrintHeader()
-    {
-        string topLine = "+" + new string('=', BoxWidth - 2) + "+";
-        
-        Console.WriteLine();
-        AnsiWriteLine("  " + topLine, AnsiColorType.Primary);
-        
-        // ASCII Art - DEFENDER
-        string[] asciiArt = new[]
-        {
-            "   █████╗ ██████╗  ██████╗██╗  ██╗",
-            "  ██╔══██╗██╔══██╗██╔════╝██║ ██╔╝",
-            "  ███████║██████╔╝██║     █████╔╝ ",
-            "  ██╔══██║██╔══██╗██║     ██╔═██╗ ",
-            "  ██║  ██║██║  ██║╚██████╗██║  ██╗",
-            "  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝"
-        };
-        
-        foreach (var line in asciiArt)
-        {
-            Console.WriteLine($"  |{AnsiColor(line.PadRight(BoxWidth - 2), AnsiColorType.Primary)}|");
-        }
-        
-        Console.WriteLine("  |" + new string(' ', BoxWidth - 2) + "|");
-        
-        // Title
-        string title = "WINDOWS DEFENDER KONTROL PANELI";
-        int titlePadding = (BoxWidth - 2 - title.Length) / 2;
-        Console.WriteLine($"  |{new string(' ', titlePadding)}{AnsiColor(title, AnsiColorType.Header)}{new string(' ', BoxWidth - 2 - titlePadding - title.Length)}|");
-        
-        // Version
-        string version = $"{AppVersion}";
-        int versionPadding = (BoxWidth - 2 - version.Length) / 2;
-        Console.WriteLine($"  |{new string(' ', versionPadding)}{AnsiColor(version, AnsiColorType.Info)}{new string(' ', BoxWidth - 2 - versionPadding - version.Length)}|");
-        
-        Console.WriteLine("  |" + new string(' ', BoxWidth - 2) + "|");
-        AnsiWriteLine("  " + topLine, AnsiColorType.Primary);
-    }
-
     static void PrintDeveloper()
     {
         // Eyüp ASCII Art
@@ -289,13 +247,18 @@ class Program
 
     static void PrintMenuItem(string number, string title, string description)
     {
-        string topLine = "+-" + AnsiColor($"[{number}]", AnsiColorType.Highlight) + "-" + AnsiColor(title, AnsiColorType.Primary) + new string('-', 40 - title.Length) + "+";
+        int contentWidth = BoxWidth - 4;
+        int prefixAndSuffixLength = 6 + number.Length + title.Length;
+        int topPadding = Math.Max(0, contentWidth - prefixAndSuffixLength);
+        
+        string topLine = "+-" + AnsiColor($"[{number}]", AnsiColorType.Highlight) + "-" + AnsiColor(title, AnsiColorType.Primary) + new string('-', topPadding) + "+";
         Console.WriteLine($"  {topLine}");
         
-        string descLine = "|   " + AnsiColor(">>", AnsiColorType.Highlight) + " " + AnsiColor(description, AnsiColorType.Secondary) + new string(' ', 42 - description.Length) + "|";
+        int descPadding = Math.Max(0, contentWidth - 8 - description.Length);
+        string descLine = "|   " + AnsiColor(">>", AnsiColorType.Highlight) + " " + AnsiColor(description, AnsiColorType.Secondary) + new string(' ', descPadding) + "|";
         Console.WriteLine($"  {descLine}");
         
-        Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
+        Console.WriteLine($"  +{new string('-', contentWidth - 2)}+");
     }
 
     static async Task ShowStatusAsync()
@@ -336,7 +299,9 @@ class Program
         
         Console.Write($"  |  {AnsiColor(">>", AnsiColorType.Info)} {label}: ");
         Console.Write(AnsiColor(statusText, statusColor));
-        Console.WriteLine(new string(' ', 35 - label.Length - statusText.Length) + "|");
+        
+        int padding = Math.Max(0, BoxWidth - 8 - label.Length - statusText.Length);
+        Console.WriteLine(new string(' ', padding) + "|");
     }
 
     static void PrintInfoRow(string label, string value)
@@ -344,7 +309,9 @@ class Program
         var displayValue = value.Length > 28 ? value.Substring(0, 25) + "..." : value;
         Console.Write($"  |  {AnsiColor("--", AnsiColorType.Secondary)} {AnsiColor(label + ":", AnsiColorType.Secondary)} ");
         Console.Write(AnsiColor(displayValue.PadRight(28), AnsiColorType.Info));
-        Console.WriteLine(new string(' ', 36 - label.Length - displayValue.Length) + "|");
+        
+        int padding = Math.Max(0, BoxWidth - 40 - label.Length);
+        Console.WriteLine(new string(' ', padding) + "|");
     }
 
     static void PrintGoodbye()
