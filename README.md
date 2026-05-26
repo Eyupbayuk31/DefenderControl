@@ -1,27 +1,58 @@
 # 🛡️ Windows Defender Kontrol Paneli
 
-**Gelistirici:** Eyüp  
-**Kaynak:** github.com/Eyupbayuk31
+**Geliştirici:** Eyüp  
+**GitHub:** [github.com/Eyupbayuk31/DefenderControl](https://github.com/Eyupbayuk31/DefenderControl)
+**Versiyon:** v2.0.0
 
 Windows Defender antivirüs yazılımını komut satırından açıp kapatmaya yarayan C# Console Application.
 
-## 📋 Ozellikler
+---
 
-- ✅ **Durum Goruntuleme:** Windows Defender'ın mevcut koruma durumunu gosterir
-- 🔴 **Defender'ı Gecici Kapatma:** Sistem yeniden baslatilinca otomatik acilir
-- 🔴 **Defender'ı Kalici Kapatma:** Sistem yeniden baslatildiginda da kapali kalir
-- 🟢 **Defender'ı Gecici Acma:** Sistem yeniden baslatilinca otomatik kapanir
-- 🟢 **Defender'ı Kalici Acma:** Sistem yeniden baslatildiginda da acik kalir
-- 🔐 **Admin Yetkisi:** Otomatik yonetici yetkisi kontrolu
-- ⚠️ **Guvenlik Uyariari:** Kritik islemler için onay mesajlari
+## ⚠️ ÖNEMLİ UYARI - ANTİVİRÜS UYARISI
 
-## 🚀 Kullanim
+> **DİKKAT: Bu uygulama Windows Defender'ı devre dışı bırakmak için tasarlanmıştır!**
+> 
+> - Uygulama çalıştırıldığında antivirüs yazılımınız kapatılacaktır
+> - Geçici kapatma seçeneği sistem yeniden başlatıldığında otomatik açılır
+> - Kalıcı kapatma seçeneği sistem yeniden başlatıldığında da kapalı kalır
+> - **Sadece güvenilir ve kontrol ettiğiniz ortamlarda kullanın**
+> - **Antivirüs kapatıldıktan sonra sistem güvensiz kalacaktır**
+> - İşiniz bittiğinde Defender'ı mutlaka tekrar açın
+
+---
+
+## 📋 Özellikler
+
+| Özellik | Açıklama |
+|---------|----------|
+| ✅ **Durum Görüntüleme** | Windows Defender'ın mevcut koruma durumunu gösterir |
+| 🔴 **Defender'ı Geçici Kapatma** | Sistem yeniden başlatılınca otomatik açılır |
+| 🔴 **Defender'ı Kalıcı Kapatma** | Sistem yeniden başlatıldığında da kapalı kalır |
+| 🟢 **Defender'ı Geçici Açma** | Sistem yeniden başlatılınca otomatik kapanır |
+| 🟢 **Defender'ı Kalıcı Açma** | Sistem yeniden başlatıldığında da açık kalır |
+| 🔐 **Admin Yetkisi** | Otomatik yönetici yetkisi kontrolü |
+| 📝 **Loglama** | Tüm işlemler Desktop'ta log dosyasına kaydedilir |
+| 🎨 **ANSI Renkli Arayüz** | Modern ve şık konsol arayüzü |
+
+---
+
+## 🚀 Kullanım
 
 ### Gereksinimler
 
 - Windows 10/11
-- .NET 8.0 SDK veya uzeri
-- Yonetici (Administrator) yetkisi
+- .NET 8.0 SDK veya üzeri
+- Yönetici (Administrator) yetkisi
+
+### Kurulum
+
+```bash
+# Projeyi klonlayın
+git clone https://github.com/Eyupbayuk31/DefenderControl.git
+
+# Proje dizinine gidin
+cd Defender
+```
 
 ### Derleme
 
@@ -30,7 +61,7 @@ cd src/DefenderControl
 dotnet build -c Release
 ```
 
-### Calistirma
+### Çalıştırma
 
 ```bash
 dotnet run
@@ -39,76 +70,123 @@ dotnet run
 veya derleme sonrası:
 
 ```
-src/DefenderControl/bin/Release/net8.0-windows/DefenderControl.exe
+src\DefenderControl\bin\Release\net8.0-windows\DefenderControl.exe
 ```
 
-## 📖 Menu Secenekleri
+### Yayınlama (Tek Dosya)
 
-### Ana Menu
+```bash
+cd src/DefenderControl
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+```
 
-| Secenek | Aciklama |
+---
+
+## 📖 Menü Seçenekleri
+
+### Ana Menü
+
+| Seçenek | Açıklama |
 |---------|----------|
-| `1` | Mevcut Defender durumunu goruntuler |
-| `2` | Kapatma secenekleri menusune gider |
-| `3` | Acma secenekleri menusune gider |
-| `4` | Uygulamadan cikar |
+| `1` | Mevcut Defender durumunu görüntüler |
+| `2` | Kapatma seçenekleri menüsüne gider |
+| `3` | Açma seçenekleri menüsüne gider |
+| `4` | Uygulamadan çıkar |
 
-### Kapatma Menu
+### Kapatma Menüsü
 
-| Secenek | Aciklama |
+| Seçenek | Açıklama |
 |---------|----------|
-| `1` | **Gecici Kapat** - Sistem yeniden baslatinca otomatik acilir |
-| `2` | **Kalici Kapat** - Sistem yeniden baslatinca da kapali kalir |
-| `3` | Geri don |
+| `1` | **Geçici Kapat** - Sistem yeniden başlatınca otomatik açılır |
+| `2` | **Kalıcı Kapat** - Sistem yeniden başlatıldığında da kapalı kalır |
+| `3` | Geri dön |
 
-### Acma Menu
+### Açma Menüsü
 
-| Secenek | Aciklama |
+| Seçenek | Açıklama |
 |---------|----------|
-| `1` | **Gecici Ac** - Sistem yeniden baslatinca otomatik kapanir |
-| `2` | **Kalici Ac** - Sistem yeniden baslatinca da acik kalir |
-| `3` | Geri don |
+| `1` | **Geçici Aç** - Sistem yeniden başlatınca otomatik kapanır |
+| `2` | **Kalıcı Aç** - Sistem yeniden başlatıldığında da açık kalır |
+| `3` | Geri dön |
 
-## ⚠️ Onemli Uyari
-
-1. **Gecici Kapatma:** Sistem yeniden baslatildiginda Defender otomatik olarak acilir
-2. **Kalici Kapatma:** Registry ve Group Policy ile kalici olarak devre disi birakilir
-3. **Guvenlik:** Sadece guvenilir ortamlarda kullanin
+---
 
 ## 🔧 Teknik Detaylar
 
-### Kullanilan Teknolojiler
+### Kullanılan Teknolojiler
 
-- **Dil:** C# 12
-- **Framework:** .NET 8.0
-- **Kontrol Yontemi:** PowerShell `Set-MpPreference` komutlari
-- **Kalici Mod:** Windows Registry `HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender`
+| Teknoloji | Değer |
+|-----------|-------|
+| **Dil** | C# 12 |
+| **Framework** | .NET 8.0 |
+| **Hedef Platform** | Windows 10/11 |
+| **Kontrol Yöntemi** | PowerShell `Set-MpPreference` komutları |
+| **Kalıcı Mod** | Windows Registry |
 
-### PowerShell Komutlari
+### Mimari Yapı
 
-**Gecici Kapatma:**
+```
+DefenderControl/
+├── Program.cs              # Ana uygulama ve menü sistemi
+├── DefenderControl.csproj  # Proje dosyası
+├── app.manifest           # Admin yetkisi manifesti
+├── Services/
+│   └── DefenderService.cs # Defender kontrol PowerShell komutları
+├── Helpers/
+│   ├── AdminHelper.cs     # Admin yetkisi kontrolü
+│   └── Logger.cs          # Loglama sistemi
+└── Models/
+    └── DefenderStatus.cs  # Durum modeli
+```
+
+### PowerShell Komutları
+
+**Geçici Kapatma:**
 ```powershell
 Set-MpPreference -DisableRealtimeMonitoring $true
 Set-MpPreference -DisableIOAVProtection $true
 Set-MpPreference -DisableBehaviorMonitoring $true
-Set-MpPreference -DisableAntivirus $true
 ```
 
-**Kalici Kapatma:**
+**Kalıcı Kapatma (Registry ile):**
 ```powershell
-# Registry ile
+# Registry yolu oluştur
+New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Force
+New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Force
+
+# Registry değerlerini ayarla
 Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -Value 1
-# Ve sonra Set-MpPreference
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableRealtimeMonitoring' -Value 1
 ```
 
-**Acma:**
+**Açma:**
 ```powershell
 Set-MpPreference -DisableRealtimeMonitoring $false
 Set-MpPreference -DisableIOAVProtection $false
 Set-MpPreference -DisableBehaviorMonitoring $false
-Set-MpPreference -DisableAntivirus $false
 ```
+
+---
+
+## 📝 Log Dosyası
+
+Tüm işlemler otomatik olarak Desktop'ta `DefenderControl_Log.txt` dosyasına kaydedilir.
+
+---
+
+## ⚠️ Güvenlik Notları
+
+1. **Geçici Kapatma:** Sistem yeniden başlatıldığında Defender otomatik olarak açılır
+2. **Kalıcı Kapatma:** Registry ve Group Policy ile kalıcı olarak devre dışı bırakılır
+3. **Güvenlik:** Sadece güvenilir ortamlarda kullanın
+4. **Kullanım Sonrası:** İşiniz bittiğinde Defender'ı mutlaka tekrar açın
+
+---
 
 ## 📝 Lisans
 
-Bu proje egitim amacli gelistirilmistir. Kendi sorumlulugunuzda kullanin.
+Bu proje eğitim amaçlı geliştirilmiştir. Kendi sorumluluğunuzda kullanın.
+
+---
+
+**💡 İpucu:** Bu uygulamayı kullanırken antivirüs yazılımınız devre dışı kalacağından, indirdiğiniz dosyalara dikkat edin ve sadece güvenilir kaynaklardan dosya indirin.

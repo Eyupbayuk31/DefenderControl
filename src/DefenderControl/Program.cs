@@ -9,11 +9,12 @@ class Program
     private static readonly DefenderService _defenderService = new();
     private const string AppVersion = "v2.0.0";
     private const string Developer = "Eyup";
-    private const string Github = "github.com/Eyupbayuk31";
+    private const string Github = "github.com/Eyupbayuk31/DefenderControl";
     private const int BoxWidth = 58;
 
     static async Task Main(string[] args)
     {
+        AdminHelper.EnableAnsiColors();
         Console.Title = $"Windows Defender Kontrol Paneli - {AppVersion}";
         
         AdminHelper.CheckAndElevate();
