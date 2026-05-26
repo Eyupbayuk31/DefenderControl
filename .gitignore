@@ -51,3 +51,8 @@ Thumbs.db
 
 # Object files
 obj/
+
+# Published files
+src/DefenderControl/publish/
+src/DefenderControl/bin/
+src/DefenderControl/obj/
