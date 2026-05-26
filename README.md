@@ -5,9 +5,9 @@
 **Versiyon:** v2.0.0
 
 Windows Defender antivirüs yazılımını komut satırından açıp kapatmaya yarayan C# Console Application.
-Not Yapay Zekaya bu tarz uygulamalar yaptıramayacağınız için her kodun üstüne açıklamalar eklendi inceleyebilirsiniz zararlı yazılım yoktur.
+Not 
 ---
-
+Yapay Zekaya bu tarz uygulamalar yaptıramayacağınız için her kodun üstüne açıklamalar eklendi inceleyebilirsiniz zararlı yazılım yoktur.
 ## ⚠️ ÖNEMLİ UYARI - ANTİVİRÜS UYARISI
 
 > **DİKKAT: Bu uygulama Windows Defender'ı devre dışı bırakmak için tasarlanmıştır!**
