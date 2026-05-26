@@ -29,6 +29,7 @@ class Program
         {
             Console.Clear();
             PrintHeader();
+            PrintDeveloper();
             PrintFooter();
             
             Console.WriteLine();
@@ -84,6 +85,7 @@ class Program
     {
         Console.Clear();
         PrintHeader();
+        PrintDeveloper();
         
         Console.WriteLine();
         AnsiWriteLine("  +" + AnsiColor(" KAPATMA SECENEKLERI ", AnsiColorType.Error) + new string('-', 33) + "+", AnsiColorType.Error);
@@ -133,6 +135,7 @@ class Program
     {
         Console.Clear();
         PrintHeader();
+        PrintDeveloper();
         
         Console.WriteLine();
         AnsiWriteLine("  +" + AnsiColor(" ACMA SECENEKLERI ", AnsiColorType.Success) + new string('-', 35) + "+", AnsiColorType.Success);
@@ -185,7 +188,7 @@ class Program
         Console.WriteLine();
         AnsiWriteLine("  " + topLine, AnsiColorType.Primary);
         
-        // ASCII Art
+        // ASCII Art - DEFENDER
         string[] asciiArt = new[]
         {
             "   █████╗ ██████╗  ██████╗██╗  ██╗",
@@ -217,11 +220,29 @@ class Program
         AnsiWriteLine("  " + topLine, AnsiColorType.Primary);
     }
 
+    static void PrintDeveloper()
+    {
+        // Eyüp ASCII Art
+        string[] eyupArt = new[]
+        {
+            "  ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗███████╗",
+            "  ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║██╔════╝",
+            "  ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║█████╗  ",
+            "  ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║██╔══╝  ",
+            "  ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║███████╗",
+            "   ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝"
+        };
+        
+        Console.WriteLine();
+        foreach (var line in eyupArt)
+        {
+            Console.WriteLine(AnsiColor(line, AnsiColorType.Highlight));
+        }
+    }
+
     static void PrintFooter()
     {
         Console.WriteLine();
-        AnsiWrite("  |  Developer: ", AnsiColorType.Info);
-        AnsiWriteLine($"{Developer} {AnsiColor("<3", AnsiColorType.Error)}", AnsiColorType.Success);
         AnsiWrite("  |  Source: ", AnsiColorType.Info);
         AnsiWriteLine(Github, AnsiColorType.Link);
     }
@@ -294,7 +315,25 @@ class Program
         
         AnsiWriteLine("  |  Cikis yaptiniz. Guvenli kalin!                  |", AnsiColorType.Success);
         Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-        AnsiWriteLine($"  |  {Developer} tarafindan kodlandi                        |", AnsiColorType.Info);
+        
+        // Eyüp ASCII Art in goodbye
+        string[] eyupArt = new[]
+        {
+            "   ██╗    ██╗███████╗██╗      ██████╗ ██████╗ ███╗   ███╗",
+            "   ██║    ██║██╔════╝██║     ██╔════╝██╔═══██╗████╗ ████║",
+            "   ██║ █╗ ██║█████╗  ██║     ██║     ██║   ██║██╔████╔██║",
+            "   ██║███╗██║██╔══╝  ██║     ██║     ██║   ██║██║╚██╔╝██║",
+            "   ╚███╔███╔╝███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║",
+            "    ╚══╝╚══╝ ╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝"
+        };
+        
+        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
+        foreach (var line in eyupArt)
+        {
+            Console.WriteLine($"  |{AnsiColor(line.PadRight(BoxWidth - 2), AnsiColorType.Highlight)}|");
+        }
+        
+        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
         AnsiWriteLine($"  |  {Github}                 |", AnsiColorType.Link);
         Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
         Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
