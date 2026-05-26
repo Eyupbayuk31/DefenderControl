@@ -34,25 +34,58 @@ public class DefenderService
         return status;
     }
 
-    public async Task<bool> DisableDefenderAsync()
+    public async Task<bool> DisableDefenderAsync(bool permanent = false)
     {
         try
         {
-            Console.WriteLine("  [*] Windows Defender devre disi birakiliyor...");
+            string mode = permanent ? "kalici" : "gecici";
+            Console.WriteLine($"  [*] Windows Defender ({mode}) devre disi birakiliyor...");
 
-            var disableScript = @"
-                Set-MpPreference -DisableRealtimeMonitoring $true
-                Set-MpPreference -DisableIOAVProtection $true
-                Set-MpPreference -DisableBehaviorMonitoring $true
-                Set-MpPreference -DisableAntivirus $true
-                Write-Output ""SUCCESS""
-            ";
+            string disableScript;
+
+            if (permanent)
+            {
+                // Kalici - Registry ve Group Policy ile
+                disableScript = @"
+                    # Disable Real-time Protection
+                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
+                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
+                    
+                    # Disable via Set-MpPreference
+                    Set-MpPreference -DisableRealtimeMonitoring $true -Force
+                    Set-MpPreference -DisableIOAVProtection $true -Force
+                    Set-MpPreference -DisableBehaviorMonitoring $true -Force
+                    Set-MpPreference -DisableAntivirus $true -Force
+                    
+                    Write-Output ""SUCCESS_PERMANENT""
+                ";
+            }
+            else
+            {
+                // Gecici - Sadece Set-MpPreference
+                disableScript = @"
+                    Set-MpPreference -DisableRealtimeMonitoring $true
+                    Set-MpPreference -DisableIOAVProtection $true
+                    Set-MpPreference -DisableBehaviorMonitoring $true
+                    Set-MpPreference -DisableAntivirus $true
+                    Write-Output ""SUCCESS_TEMPORARY""
+                ";
+            }
 
             var result = await RunPowerShellAsync(disableScript);
             
-            if (result.Contains("SUCCESS"))
+            if (result.Contains("SUCCESS_PERMANENT"))
             {
-                Console.WriteLine("  [✓] Windows Defender basariyla devre disi birakildu!");
+                Console.WriteLine("  [OK] Windows Defender kalici olarak devre disi birakildu!");
+                Console.WriteLine("       (Sistem yeniden baslatildiktan sonra da devre disi kalacak)");
+                return true;
+            }
+            else if (result.Contains("SUCCESS_TEMPORARY"))
+            {
+                Console.WriteLine("  [OK] Windows Defender gecici olarak devre disi birakildu!");
+                Console.WriteLine("       (Sistem yeniden baslatildiginda otomatik acilacak)");
                 return true;
             }
             
@@ -66,25 +99,55 @@ public class DefenderService
         }
     }
 
-    public async Task<bool> EnableDefenderAsync()
+    public async Task<bool> EnableDefenderAsync(bool permanent = false)
     {
         try
         {
-            Console.WriteLine("  [*] Windows Defender etkinlestiriliyor...");
+            string mode = permanent ? "kalici" : "gecici";
+            Console.WriteLine($"  [*] Windows Defender ({mode}) etkinlestiriliyor...");
 
-            var enableScript = @"
-                Set-MpPreference -DisableRealtimeMonitoring $false
-                Set-MpPreference -DisableIOAVProtection $false
-                Set-MpPreference -DisableBehaviorMonitoring $false
-                Set-MpPreference -DisableAntivirus $false
-                Write-Output ""SUCCESS""
-            ";
+            string enableScript;
+
+            if (permanent)
+            {
+                // Kalici - Registry ve Group Policy'yi temizle
+                enableScript = @"
+                    # Enable via Set-MpPreference
+                    Set-MpPreference -DisableRealtimeMonitoring $false -Force
+                    Set-MpPreference -DisableIOAVProtection $false -Force
+                    Set-MpPreference -DisableBehaviorMonitoring $false -Force
+                    Set-MpPreference -DisableAntivirus $false -Force
+                    
+                    # Remove Registry restrictions
+                    Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
+                    Remove-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
+                    
+                    Write-Output ""SUCCESS""
+                ";
+            }
+            else
+            {
+                // Gecici - Sadece Set-MpPreference
+                enableScript = @"
+                    Set-MpPreference -DisableRealtimeMonitoring $false
+                    Set-MpPreference -DisableIOAVProtection $false
+                    Set-MpPreference -DisableBehaviorMonitoring $false
+                    Set-MpPreference -DisableAntivirus $false
+                    Write-Output ""SUCCESS""
+                ";
+            }
 
             var result = await RunPowerShellAsync(enableScript);
             
             if (result.Contains("SUCCESS"))
             {
-                Console.WriteLine("  [✓] Windows Defender basariyla etkinlestirildi!");
+                Console.WriteLine("  [OK] Windows Defender basariyla etkinlestirildi!");
+                if (permanent)
+                {
+                    Console.WriteLine("       (Kalici koruma aktif - sistem yeniden baslatsaniz dahi)");
+                }
                 return true;
             }
             

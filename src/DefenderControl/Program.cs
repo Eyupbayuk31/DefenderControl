@@ -7,7 +7,7 @@ namespace DefenderControl;
 class Program
 {
     private static readonly DefenderService _defenderService = new();
-    private const string AppVersion = "v1.0.0";
+    private const string AppVersion = "v2.0.0";
     private const string Developer = "Eyup";
     private const string Github = "github.com/Eyupbayuk31";
     private const int BoxWidth = 58;
@@ -55,10 +55,10 @@ class Program
                     await ShowStatusAsync();
                     break;
                 case "2":
-                    await DisableDefenderAsync();
+                    await ShowDisableMenuAsync();
                     break;
                 case "3":
-                    await EnableDefenderAsync();
+                    await ShowEnableMenuAsync();
                     break;
                 case "4":
                     exit = true;
@@ -78,6 +78,104 @@ class Program
 
         Console.Clear();
         PrintGoodbye();
+    }
+
+    static async Task ShowDisableMenuAsync()
+    {
+        Console.Clear();
+        PrintHeader();
+        
+        Console.WriteLine();
+        AnsiWriteLine("  +" + AnsiColor(" KAPATMA SECENEKLERI ", AnsiColorType.Error) + new string('-', 33) + "+", AnsiColorType.Error);
+        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
+        
+        PrintMenuItem("1", "Gecici Kapat", "Sistem yeniden baslatilinca otomatik acilir");
+        Console.WriteLine();
+        PrintMenuItem("2", "Kalici Kapat", "Sistem yeniden baslatildiginda da kapali kalir");
+        Console.WriteLine();
+        PrintMenuItem("3", "Geri", "Ana menuye don");
+        
+        Console.WriteLine();
+        Console.WriteLine("  +" + new string('-', BoxWidth - 4) + "+");
+        Console.Write($"  |  Seciminiz: ");
+        
+        var choice = Console.ReadLine();
+        Console.WriteLine("  +" + new string('-', BoxWidth - 4) + "+");
+        Console.WriteLine();
+
+        bool success = false;
+        
+        switch (choice)
+        {
+            case "1":
+                success = await _defenderService.DisableDefenderAsync(false);
+                break;
+            case "2":
+                success = await _defenderService.DisableDefenderAsync(true);
+                break;
+            case "3":
+                return;
+            default:
+                PrintError("Gecersiz secim!");
+                break;
+        }
+
+        if (success)
+        {
+            Console.WriteLine();
+            AnsiWriteLine("  +=============================================================+", AnsiColorType.Success);
+            AnsiWriteLine("  |                    ISLEM BASARILI                           |", AnsiColorType.Success);
+            AnsiWriteLine("  +=============================================================+", AnsiColorType.Success);
+        }
+    }
+
+    static async Task ShowEnableMenuAsync()
+    {
+        Console.Clear();
+        PrintHeader();
+        
+        Console.WriteLine();
+        AnsiWriteLine("  +" + AnsiColor(" ACMA SECENEKLERI ", AnsiColorType.Success) + new string('-', 35) + "+", AnsiColorType.Success);
+        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
+        
+        PrintMenuItem("1", "Gecici Ac", "Sistem yeniden baslatilinca otomatik kapanir");
+        Console.WriteLine();
+        PrintMenuItem("2", "Kalici Ac", "Sistem yeniden baslatildiginda da acik kalir");
+        Console.WriteLine();
+        PrintMenuItem("3", "Geri", "Ana menuye don");
+        
+        Console.WriteLine();
+        Console.WriteLine("  +" + new string('-', BoxWidth - 4) + "+");
+        Console.Write($"  |  Seciminiz: ");
+        
+        var choice = Console.ReadLine();
+        Console.WriteLine("  +" + new string('-', BoxWidth - 4) + "+");
+        Console.WriteLine();
+
+        bool success = false;
+        
+        switch (choice)
+        {
+            case "1":
+                success = await _defenderService.EnableDefenderAsync(false);
+                break;
+            case "2":
+                success = await _defenderService.EnableDefenderAsync(true);
+                break;
+            case "3":
+                return;
+            default:
+                PrintError("Gecersiz secim!");
+                break;
+        }
+
+        if (success)
+        {
+            Console.WriteLine();
+            AnsiWriteLine("  +=============================================================+", AnsiColorType.Success);
+            AnsiWriteLine("  |                    ISLEM BASARILI                           |", AnsiColorType.Success);
+            AnsiWriteLine("  +=============================================================+", AnsiColorType.Success);
+        }
     }
 
     static void PrintHeader()
@@ -188,82 +286,6 @@ class Program
         Console.WriteLine(new string(' ', 36 - label.Length - displayValue.Length) + "|");
     }
 
-    static async Task DisableDefenderAsync()
-    {
-        // Warning header
-        string warningBox = "+" + AnsiColor($" ! ONEMLI UYARI ! ", AnsiColorType.Error) + new string('-', 38) + "+";
-        Console.WriteLine($"  {warningBox}");
-        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-        
-        AnsiWriteLine("  |  Windows Defender'i kapatarak sisteminizi         |", AnsiColorType.Error);
-        AnsiWriteLine("  |  guvenlik aciklarina karsi savunmasiz             |", AnsiColorType.Error);
-        AnsiWriteLine($"  |{new string(' ', BoxWidth - 2)}|", AnsiColorType.Error);
-        AnsiWriteLine("  |  birakacaksiniz!                               |", AnsiColorType.Error);
-        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-        Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
-        
-        Console.WriteLine();
-        AnsiWrite("  ! Devam etmek istiyor musunuz? (E/H): ", AnsiColorType.Warning);
-        
-        var confirm = Console.ReadLine();
-        
-        if (!confirm?.ToUpper().Equals("E") ?? true)
-        {
-            Console.WriteLine();
-            AnsiWrite("  [i] Islem iptal edildi.", AnsiColorType.Info);
-            return;
-        }
-
-        Console.WriteLine();
-        AnsiWrite("  [*] Islem gerceklestiriliyor...\n", AnsiColorType.Warning);
-        
-        var success = await _defenderService.DisableDefenderAsync();
-
-        if (success)
-        {
-            Console.WriteLine();
-            string successBox = "+" + AnsiColor($" BASARILI ", AnsiColorType.Success) + new string('-', 42) + "+";
-            Console.WriteLine($"  {successBox}");
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            AnsiWriteLine("  |  Windows Defender devre disi birakildu!          |", AnsiColorType.Error);
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            AnsiWriteLine("  |  Sisteminiz su anda korumasiz.                  |", AnsiColorType.Warning);
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            AnsiWriteLine("  |  ! Dikkatli olun!                              |", AnsiColorType.Warning);
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
-        }
-    }
-
-    static async Task EnableDefenderAsync()
-    {
-        string enableBox = "+" + AnsiColor($" DEFENDER ACILIYOR ", AnsiColorType.Success) + new string('-', 35) + "+";
-        Console.WriteLine($"  {enableBox}");
-        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-        AnsiWriteLine("  |  Koruma ozellikleri etkinlestiriliyor...         |", AnsiColorType.Info);
-        Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-        Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
-        
-        Console.WriteLine();
-        
-        var success = await _defenderService.EnableDefenderAsync();
-
-        if (success)
-        {
-            Console.WriteLine();
-            string successBox = "+" + AnsiColor($" BASARILI ", AnsiColorType.Success) + new string('-', 42) + "+";
-            Console.WriteLine($"  {successBox}");
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            AnsiWriteLine("  |  Windows Defender basariyla etkinlestirildi!    |", AnsiColorType.Success);
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            AnsiWriteLine("  |  Sisteminiz artik koruma altinda.               |", AnsiColorType.Success);
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            AnsiWriteLine("  |  Guvenlik korumasi aktif                      |", AnsiColorType.Success);
-            Console.WriteLine($"  |{new string(' ', BoxWidth - 2)}|");
-            Console.WriteLine($"  +{new string('-', BoxWidth - 2)}+");
-        }
-    }
-
     static void PrintGoodbye()
     {
         string byeBox = "+" + AnsiColor($" GORUSURUZ ", AnsiColorType.Success) + new string('-', 42) + "+";
@@ -307,7 +329,7 @@ class Program
             AnsiColorType.Secondary => "\u001b[90m",    // Bright Black
             AnsiColorType.Header => "\u001b[1;36m",     // Bold Cyan
             AnsiColorType.Info => "\u001b[37m",         // White
-            AnsiColorType.Success => "\u001b[32m",       // Green
+            AnsiColorType.Success => "\u001b[32m",      // Green
             AnsiColorType.Error => "\u001b[31m",        // Red
             AnsiColorType.Warning => "\u001b[33m",      // Yellow
             AnsiColorType.Link => "\u001b[94m",         // Blue (link)
