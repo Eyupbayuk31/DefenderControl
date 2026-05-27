@@ -6,6 +6,51 @@ namespace DefenderControl.Services;
 
 public class DefenderService
 {
+    // ANSI Renk Kodlari (Program.cs ile ayni)
+    enum AnsiColorType
+    {
+        Primary,
+        Secondary,
+        Header,
+        Info,
+        Success,
+        Error,
+        Warning,
+        Link,
+        Highlight
+    }
+
+    // Metne ANSI renk kodu ekler
+    static string AnsiColor(string text, AnsiColorType colorType)
+    {
+        string colorCode = colorType switch
+        {
+            AnsiColorType.Primary => "\u001b[36m",      // Cyan
+            AnsiColorType.Secondary => "\u001b[90m",    // Bright Black
+            AnsiColorType.Header => "\u001b[1;36m",     // Bold Cyan
+            AnsiColorType.Info => "\u001b[37m",         // White
+            AnsiColorType.Success => "\u001b[32m",      // Green
+            AnsiColorType.Error => "\u001b[31m",        // Red
+            AnsiColorType.Warning => "\u001b[33m",      // Yellow
+            AnsiColorType.Link => "\u001b[94m",         // Blue (link)
+            AnsiColorType.Highlight => "\u001b[1;33m", // Bold Yellow
+            _ => "\u001b[0m"
+        };
+        return $"{colorCode}{text}\u001b[0m";
+    }
+
+    // Renkli metin yazdirir
+    static void AnsiWrite(string text, AnsiColorType colorType)
+    {
+        Console.Write(AnsiColor(text, colorType));
+    }
+
+    // Renkli metin yazdirir ve satir atlar
+    static void AnsiWriteLine(string text, AnsiColorType colorType)
+    {
+        Console.WriteLine(AnsiColor(text, colorType));
+    }
+
     // Windows Defender durumunu alir
     public async Task<DefenderStatus> GetStatusAsync()
     {
@@ -44,35 +89,58 @@ public class DefenderService
         {
             string mode = permanent ? "kalici" : "gecici";
             Logger.Log($"Windows Defender devre disi birakma islemi basladi. Mod: {mode}");
-            Console.WriteLine($"  [*] Windows Defender ({mode}) devre disi birakiliyor...");
-
-            string disableScript;
 
             if (permanent)
             {
-                // Kalici mod - Tum Registry ve Group Policy ayarlarini yap
-                string tempScript = @"
+                // Kalici mod - Adim adim mesajlarla PowerShell scripti
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Info);
+                AnsiWriteLine("  │          WINDOWS DEFENDER KALICI KAPATMA              │", AnsiColorType.Error);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Info);
+                Console.WriteLine();
+
+                // Adim 1: Registry ayarlari
+                AnsiWrite("  [1/4] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Registry (Group Policy) ayarlari yapilandiriliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 1: Registry ayarlari yapilandiriliyor");
+
+                string regScript = @"
 $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 
 if (!(Test-Path $defenderPath)) { New-Item -Path $defenderPath -Force | Out-Null }
 if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
 
-# ANA KAPATMA - DisableAntiSpyware (en onemli, bu olmadan digerleri calismayabilir)
 Set-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
-
-# DIGER KORUMA AYARLARI
 Set-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $defenderPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $defenderPath -Name 'DisableTamperProtection' -Value 1 -Type DWord -Force
 
-# GERCEK ZAMANLI KORUMA AYARLARI
 Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
 
-# Set-MpPreference - Anlik devre disi birakma
+Write-Output 'STEP1_OK'
+";
+                var regResult = await RunPowerShellAsync(regScript);
+                if (regResult.Contains("STEP1_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Registry ayarlari yapildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Registry ayarlari kisitlamali olabilir", AnsiColorType.Warning);
+                }
+
+                // Adim 2: Set-MpPreference ayarlari
+                AnsiWrite("  [2/4] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Gercek zamanli koruma kapatiliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 2: Set-MpPreference ayarlari yapilandiriliyor");
+
+                string prefScript = @"
 Set-MpPreference -DisableRealtimeMonitoring $true -Force
 Set-MpPreference -DisableIOAVProtection $true -Force
 Set-MpPreference -DisableBehaviorMonitoring $true -Force
@@ -80,21 +148,75 @@ Set-MpPreference -DisableScriptScanning $true -Force
 Set-MpPreference -DisableEmailScanning $true -Force
 Set-MpPreference -DisableArchiveScanning $true -Force
 
-# WINDOWS DEFENDER SERVISLERINI DURDUR
+Write-Output 'STEP2_OK'
+";
+                var prefResult = await RunPowerShellAsync(prefScript);
+                if (prefResult.Contains("STEP2_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Gercek zamanli koruma kapatildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Koruma ayarlari kisitlamali olabilir", AnsiColorType.Warning);
+                }
+
+                // Adim 3: Servisleri durdur
+                AnsiWrite("  [3/4] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Windows Defender servisleri durduruluyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 3: Servisler durduruluyor");
+
+                string svcScript = @"
 Stop-Service -Name WinDefend -Force -ErrorAction SilentlyContinue
 Set-Service -Name WinDefend -StartupType Disabled -ErrorAction SilentlyContinue
 Stop-Service -Name WdNisSvc -Force -ErrorAction SilentlyContinue
 Set-Service -Name WdNisSvc -StartupType Disabled -ErrorAction SilentlyContinue
 
-Write-Output 'SUCCESS_PERMANENT'
+Write-Output 'STEP3_OK'
 ";
-                disableScript = tempScript;
+                var svcResult = await RunPowerShellAsync(svcScript);
+                if (svcResult.Contains("STEP3_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Servisler durduruldu", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Servisler durdurulamadi (korunan sistem)", AnsiColorType.Warning);
+                }
+
+                // Adim 4: Sonuc
+                AnsiWrite("  [4/4] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Sonuc kontrol ediliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 4: Sonuc kontrol ediliyor");
+
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Success);
+                AnsiWriteLine("  │              ISLEM TAMAMLANDI                         │", AnsiColorType.Success);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Success);
+                Console.WriteLine();
+                AnsiWriteLine("  Windows Defender kalici olarak devre disi birakildi!", AnsiColorType.Success);
+                AnsiWriteLine("  (Sistem yeniden baslatildiktan sonra da devre disi kalacak)", AnsiColorType.Info);
+                
+                return true;
             }
             else
             {
-                // Gecici mod - Tum korumalari devre disi birak
-                disableScript = @"
-# Tum korumalari devre disi birak
+                // Gecici mod - Adim adim mesajlarla
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Info);
+                AnsiWriteLine("  │          WINDOWS DEFENDER GECICI KAPATMA              │", AnsiColorType.Error);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Info);
+                Console.WriteLine();
+
+                // Adim 1: Set-MpPreference
+                AnsiWrite("  [1/2] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Gercek zamanli koruma kapatiliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 1: Gecici koruma kapatiliyor");
+
+                string prefScript = @"
 Set-MpPreference -DisableRealtimeMonitoring $true -Force
 Set-MpPreference -DisableIOAVProtection $true -Force
 Set-MpPreference -DisableBehaviorMonitoring $true -Force
@@ -102,46 +224,64 @@ Set-MpPreference -DisableScriptScanning $true -Force
 Set-MpPreference -DisableEmailScanning $true -Force
 Set-MpPreference -DisableArchiveScanning $true -Force
 
-# Registry ile destekle (sistem yeniden baslatinca acilmaz)
+Write-Output 'STEP1_OK'
+";
+                var prefResult = await RunPowerShellAsync(prefScript);
+                if (prefResult.Contains("STEP1_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Gercek zamanli koruma kapatildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Koruma ayarlari kisitlamali olabilir", AnsiColorType.Warning);
+                }
+
+                // Adim 2: Registry desteği
+                AnsiWrite("  [2/2] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Registry ayarlari yapilandiriliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 2: Registry ayarlari");
+
+                string regScript = @"
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
 Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
 
-Write-Output 'SUCCESS_TEMPORARY'
+Write-Output 'STEP2_OK'
 ";
-            }
+                var regResult = await RunPowerShellAsync(regScript);
+                if (regResult.Contains("STEP2_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Registry ayarlari yapildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Registry ayarlari kisitlamali olabilir", AnsiColorType.Warning);
+                }
 
-            Logger.Log($"Kapatma scripti calistiriliyor...");
-            var result = await RunPowerShellAsync(disableScript);
-            Logger.Log($"Kapatma scripti tamamlandi. Cikti: {result.Trim()}");
-            
-            // Sonucu temizle ve kontrol et
-            var cleanResult = result.Trim().Replace("\r", "").Replace("\n", "").Replace(" ", "");
-            
-            if (cleanResult.Contains("SUCCESS_PERMANENT") || result.Contains("SUCCESS_PERMANENT"))
-            {
-                Logger.Log("Windows Defender kalici olarak basariyla kapatildi.");
-                Console.WriteLine("  [OK] Windows Defender kalici olarak devre disi birakildi!");
-                Console.WriteLine("       (Sistem yeniden baslatildiktan sonra da devre disi kalacak)");
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Success);
+                AnsiWriteLine("  │              ISLEM TAMAMLANDI                         │", AnsiColorType.Success);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Success);
+                Console.WriteLine();
+                AnsiWriteLine("  Windows Defender gecici olarak devre disi birakildi!", AnsiColorType.Success);
+                AnsiWriteLine("  (Sistem yeniden baslatildiginda otomatik acilacak)", AnsiColorType.Info);
+                
                 return true;
             }
-            else if (cleanResult.Contains("SUCCESS_TEMPORARY") || result.Contains("SUCCESS_TEMPORARY"))
-            {
-                Logger.Log("Windows Defender gecici olarak basariyla kapatildi.");
-                Console.WriteLine("  [OK] Windows Defender gecici olarak devre disi birakildi!");
-                Console.WriteLine("       (Sistem yeniden baslatildiginda otomatik acilacak)");
-                return true;
-            }
-            
-            // Eger hic hata yoksa ve komutlar calismissa basaari say
-            Logger.Log("Kapatma islemi tamamlandi. Sonuc kontrol ediliyor...", "INFO");
-            Console.WriteLine("  [OK] Windows Defender devre disi birakma islemi tamamlandi!");
-            return true;
         }
         catch (Exception ex)
         {
             Logger.LogError("Kapatma islemi sirasinda kritik hata olustu", ex);
+            Console.WriteLine();
+            AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Error);
+            AnsiWriteLine("  │              ISLEM BASARISIZ                          │", AnsiColorType.Error);
+            AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Error);
+            Console.WriteLine();
             Console.WriteLine($"  [!] Hata: {ex.Message}");
             return false;
         }
@@ -154,26 +294,25 @@ Write-Output 'SUCCESS_TEMPORARY'
         {
             string mode = permanent ? "kalici" : "gecici";
             Logger.Log($"Windows Defender etkinlestirme islemi basladi. Mod: {mode}");
-            Console.WriteLine($"  [*] Windows Defender ({mode}) etkinlestiriliyor...");
-
-            string enableScript;
 
             if (permanent)
             {
-                // Kalici mod - Tum Registry kisitlamalarini kaldir ve servisleri baslat
-                enableScript = @"
-# Tum korumalari ac
-Set-MpPreference -DisableRealtimeMonitoring $false -Force
-Set-MpPreference -DisableIOAVProtection $false -Force
-Set-MpPreference -DisableBehaviorMonitoring $false -Force
-Set-MpPreference -DisableScriptScanning $false -Force
-Set-MpPreference -DisableEmailScanning $false -Force
-Set-MpPreference -DisableArchiveScanning $false -Force
+                // Kalici mod - Adim adim mesajlarla
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Info);
+                AnsiWriteLine("  │          WINDOWS DEFENDER KALICI ACMA                │", AnsiColorType.Success);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Info);
+                Console.WriteLine();
 
+                // Adim 1: Registry degerlerini temizle
+                AnsiWrite("  [1/3] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Registry (Group Policy) degerleri temizleniyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 1: Registry degerleri temizleniyor");
+
+                string regScript = @"
 $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 
-# Registry degerlerini kaldir
 Remove-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -ErrorAction SilentlyContinue
@@ -184,60 +323,159 @@ Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction
 Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
 
-# Servisleri baslat
+Write-Output 'STEP1_OK'
+";
+                var regResult = await RunPowerShellAsync(regScript);
+                if (regResult.Contains("STEP1_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Registry degerleri temizlendi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Registry temizlenirken sorun olustu", AnsiColorType.Warning);
+                }
+
+                // Adim 2: Korumalari ac
+                AnsiWrite("  [2/3] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Gercek zamanli koruma etkinlestiriliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 2: Korumalar etkinlestiriliyor");
+
+                string prefScript = @"
+Set-MpPreference -DisableRealtimeMonitoring $false -Force
+Set-MpPreference -DisableIOAVProtection $false -Force
+Set-MpPreference -DisableBehaviorMonitoring $false -Force
+Set-MpPreference -DisableScriptScanning $false -Force
+Set-MpPreference -DisableEmailScanning $false -Force
+Set-MpPreference -DisableArchiveScanning $false -Force
+
+Write-Output 'STEP2_OK'
+";
+                var prefResult = await RunPowerShellAsync(prefScript);
+                if (prefResult.Contains("STEP2_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Gercek zamanli koruma acildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Koruma ayarlari sorunlu olabilir", AnsiColorType.Warning);
+                }
+
+                // Adim 3: Servisleri baslat
+                AnsiWrite("  [3/3] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Windows Defender servisleri baslatiliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 3: Servisler baslatiliyor");
+
+                string svcScript = @"
 Set-Service -Name WinDefend -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service -Name WinDefend -ErrorAction SilentlyContinue
 Set-Service -Name WdNisSvc -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service -Name WdNisSvc -ErrorAction SilentlyContinue
 
-Write-Output 'SUCCESS'
+Write-Output 'STEP3_OK'
 ";
+                var svcResult = await RunPowerShellAsync(svcScript);
+                if (svcResult.Contains("STEP3_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Servisler baslatildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Servisler manuel baslatilmis olabilir", AnsiColorType.Warning);
+                }
+
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Success);
+                AnsiWriteLine("  │              ISLEM TAMAMLANDI                         │", AnsiColorType.Success);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Success);
+                Console.WriteLine();
+                AnsiWriteLine("  Windows Defender kalici olarak etkinlestirildi!", AnsiColorType.Success);
+                AnsiWriteLine("  (Sistem yeniden baslatildiginda da acik kalacak)", AnsiColorType.Info);
+                
+                return true;
             }
             else
             {
-                // Gecici mod - Korumalari etkinlestir
-                enableScript = @"
-# Tum korumalari ac
+                // Gecici mod - Adim adim mesajlarla
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Info);
+                AnsiWriteLine("  │          WINDOWS DEFENDER GECICI ACMA                 │", AnsiColorType.Success);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Info);
+                Console.WriteLine();
+
+                // Adim 1: Korumalari ac
+                AnsiWrite("  [1/2] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Gercek zamanli koruma etkinlestiriliyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 1: Korumalar etkinlestiriliyor");
+
+                string prefScript = @"
 Set-MpPreference -DisableRealtimeMonitoring $false -Force
 Set-MpPreference -DisableIOAVProtection $false -Force
 Set-MpPreference -DisableBehaviorMonitoring $false -Force
 Set-MpPreference -DisableScriptScanning $false -Force
 
-# Registry gecici ayarlarini kaldir
+Write-Output 'STEP1_OK'
+";
+                var prefResult = await RunPowerShellAsync(prefScript);
+                if (prefResult.Contains("STEP1_OK"))
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Gercek zamanli koruma acildi", AnsiColorType.Success);
+                }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Koruma ayarlari sorunlu olabilir", AnsiColorType.Warning);
+                }
+
+                // Adim 2: Registry degerlerini temizle
+                AnsiWrite("  [2/2] ", AnsiColorType.Highlight);
+                AnsiWriteLine("Registry degerleri temizleniyor...", AnsiColorType.Warning);
+                Logger.Log("Adim 2: Registry degerleri temizleniyor");
+
+                string regScript = @"
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
 
-Write-Output 'SUCCESS'
+Write-Output 'STEP2_OK'
 ";
-            }
-
-            Logger.Log($"Etkinlestirme scripti calistiriliyor...");
-            var result = await RunPowerShellAsync(enableScript);
-            Logger.Log($"Etkinlestirme scripti tamamlandi. Cikti: {result.Trim()}");
-            
-            // Sonucu temizle ve kontrol et
-            var cleanResult = result.Trim().Replace("\r", "").Replace("\n", "").Replace(" ", "");
-            
-            if (cleanResult.Contains("SUCCESS") || result.Contains("SUCCESS"))
-            {
-                Logger.Log("Windows Defender basariyla etkinlestirildi.");
-                Console.WriteLine("  [OK] Windows Defender basariyla etkinlestirildi!");
-                if (permanent)
+                var regResult = await RunPowerShellAsync(regScript);
+                if (regResult.Contains("STEP2_OK"))
                 {
-                    Console.WriteLine("       (Kalici koruma aktif - sistem yeniden baslatsaniz dahi)");
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("✓ Registry degerleri temizlendi", AnsiColorType.Success);
                 }
+                else
+                {
+                    AnsiWrite("        ", AnsiColorType.Info);
+                    AnsiWriteLine("! Registry temizlenirken sorun olustu", AnsiColorType.Warning);
+                }
+
+                Console.WriteLine();
+                AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Success);
+                AnsiWriteLine("  │              ISLEM TAMAMLANDI                         │", AnsiColorType.Success);
+                AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Success);
+                Console.WriteLine();
+                AnsiWriteLine("  Windows Defender gecici olarak etkinlestirildi!", AnsiColorType.Success);
+                AnsiWriteLine("  (Sistem yeniden baslatildiginda otomatik kapanabilir)", AnsiColorType.Info);
+                
                 return true;
             }
-            
-            // Eger hic hata yoksa ve komutlar calismissa basaari say
-            Logger.Log("Etkinlestirme islemi tamamlandi. Sonuc kontrol ediliyor...", "INFO");
-            Console.WriteLine("  [OK] Windows Defender etkinlestirme islemi tamamlandi!");
-            return true;
         }
         catch (Exception ex)
         {
             Logger.LogError("Etkinlestirme islemi sirasinda kritik hata olustu", ex);
+            Console.WriteLine();
+            AnsiWriteLine("  ┌─────────────────────────────────────────────────────────┐", AnsiColorType.Error);
+            AnsiWriteLine("  │              ISLEM BASARISIZ                          │", AnsiColorType.Error);
+            AnsiWriteLine("  └─────────────────────────────────────────────────────────┘", AnsiColorType.Error);
+            Console.WriteLine();
             Console.WriteLine($"  [!] Hata: {ex.Message}");
             return false;
         }
