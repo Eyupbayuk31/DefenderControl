@@ -1,23 +1,39 @@
 # 🛡️ Windows Defender Kontrol Paneli
 
-**Geliştirici:** Eyüp  
+**Geliştirici:** Eyüp
 **GitHub:** [github.com/Eyupbayuk31/DefenderControl](https://github.com/Eyupbayuk31/DefenderControl)
-**Versiyon:** v2.0.0
+**Versiyon:** v2.1.0
 
-Windows Defender antivirüs yazılımını komut satırından açıp kapatmaya yarayan C# Console Application.
-Not 
+> ⚠️ **BU BİR ZARARLI YAZILIM DEĞİLDİR!** Bu uygulama tamamen eğitim amaçlı geliştirilmiştir.
+> Windows Defender'ı açmak ve kapatmak için kullanılır. Tüm kaynak kodlar açık kaynaklıdır ve incelenebilir.
+
 ---
-Yapay Zekaya bu tarz uygulamalar yaptıramayacağınız için her kodun üstüne açıklamalar eklendi inceleyebilirsiniz zararlı yazılım yoktur.
-## ⚠️ ÖNEMLİ UYARI - ANTİVİRÜS UYARISI
+
+## ❓ Bu Uygulama Nedir?
+
+Bu uygulama, **kendi bilgisayarınızda** Windows Defender antivirüs yazılımını
+komut satırından (CLI) kontrol etmenizi sağlar. PowerShell komutları kullanarak
+Defender'ın hangi özelliklerinin açık veya kapalı olduğunu görüntüleyebilir
+ve bu özellikleri yönetebilirsiniz.
+
+### Neden Bu Uygulama?
+
+- **Eğitim Amaçlı:** Windows Defender'ın nasıl çalıştığını öğrenmek için
+- **Geliştiriciler İçin:** Yazılım geliştirirken Defender'ın tarama davranışını test etmek için
+- **PowerShell Öğrenme:** PowerShell komutlarının nasıl kullanıldığını görmek için
+
+---
+
+## ⚠️ ÖNEMLİ UYARI
 
 > **DİKKAT: Bu uygulama Windows Defender'ı devre dışı bırakmak için tasarlanmıştır!**
-> 
-> - Uygulama çalıştırıldığında antivirüs yazılımınız kapatılacaktır
-> - Geçici kapatma seçeneği sistem yeniden başlatıldığında otomatik açılır
-> - Kalıcı kapatma seçeneği sistem yeniden başlatıldığında da kapalı kalır
-> - **Sadece güvenilir ve kontrol ettiğiniz ortamlarda kullanın**
-> - **Antivirüs kapatıldıktan sonra sistem güvensiz kalacaktır**
-> - İşiniz bittiğinde Defender'ı mutlaka tekrar açın
+
+- Uygulama çalıştırıldığında antivirüs yazılımınız kapatılacaktır
+- Geçici kapatma seçeneği sistem yeniden başlatıldığında otomatik açılır
+- Kalıcı kapatma seçeneği sistem yeniden başlatıldığında da kapalı kalır
+- **Sadece güvenilir ve kontrol ettiğiniz ortamlarda kullanın**
+- **Antivirüs kapatıldıktan sonra sistem güvensiz kalacaktır**
+- **İşiniz bittiğinde Defender'ı mutlaka tekrar açın**
 
 ---
 
@@ -33,6 +49,15 @@ Yapay Zekaya bu tarz uygulamalar yaptıramayacağınız için her kodun üstüne
 | 🔐 **Admin Yetkisi** | Otomatik yönetici yetkisi kontrolü |
 | 📝 **Loglama** | Tüm işlemler Desktop'ta log dosyasına kaydedilir |
 | 🎨 **ANSI Renkli Arayüz** | Modern ve şık konsol arayüzü |
+
+### v2.1.0 Yenilikleri
+
+- **Tam Kapatma Desteği:** Artık tüm Windows Defender bileşenleri kapatılıyor
+- **Genişletilmiş Koruma Kapatma:** Gerçek zamanlı koruma, IOAV, davranış izleme, betik tarama, e-posta tarama, arşiv tarama ve daha fazlası
+- **Tamper Protection Kapatma:** Windows Defender'ın kendini koruması devre dışı bırakılıyor
+- **Servis Yönetimi:** WinDefend ve WdNisSvc servisleri durduruluyor/baslatılıyor
+- **Windows Security Center:** Güvenlik merkezi ayarları yönetiliyor
+- **Güvenilir Sonuç Kontrolü:** İşlem sonrası başarı mesajı gösterimi düzeltildi
 
 ---
 
@@ -121,7 +146,8 @@ dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=
 | **Framework** | .NET 8.0 |
 | **Hedef Platform** | Windows 10/11 |
 | **Kontrol Yöntemi** | PowerShell `Set-MpPreference` komutları |
-| **Kalıcı Mod** | Windows Registry |
+| **Kalıcı Mod** | Windows Registry (Group Policy) |
+| **UI** | ANSI Renkli Konsol Arayüzü |
 
 ### Mimari Yapı
 
@@ -139,31 +165,35 @@ DefenderControl/
     └── DefenderStatus.cs  # Durum modeli
 ```
 
-### PowerShell Komutları
+### Kapatırken Yapılan İşlemler (Açık Kaynak Kod)
 
 **Geçici Kapatma:**
+1. `Set-MpPreference` komutları ile anlık koruma ayarlarını değiştirir
+2. Registry'de geçici ayarlar yapar
+3. Sistem yeniden başlatılınca Defender otomatik açılır
+
+**Kalıcı Kapatma:**
+1. `HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender` yolunu oluşturur
+2. Group Policy ayarlarını yapılandırır
+3. DisableAntiSpyware, DisableRealtimeProtection, DisableOnAccessProtection ayarlarını yapar
+4. Tamper Protection'ı devre dışı bırakır
+5. WinDefend ve WdNisSvc servislerini durdurur ve devre dışı bırakır
+6. Windows Security Center ayarlarını değiştirir
+
+### PowerShell Komutları (Eğitim Amaçlı)
+
 ```powershell
+# Durum bilgisi alma
+Get-MpComputerStatus
+
+# Korumayı kapatma (Geçici)
 Set-MpPreference -DisableRealtimeMonitoring $true
-Set-MpPreference -DisableIOAVProtection $true
-Set-MpPreference -DisableBehaviorMonitoring $true
-```
 
-**Kalıcı Kapatma (Registry ile):**
-```powershell
-# Registry yolu oluştur
-New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Force
-New-Item -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Force
-
-# Registry değerlerini ayarla
-Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -Value 1
-Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection' -Name 'DisableRealtimeMonitoring' -Value 1
-```
-
-**Açma:**
-```powershell
+# Korumayı açma (Geçici)
 Set-MpPreference -DisableRealtimeMonitoring $false
-Set-MpPreference -DisableIOAVProtection $false
-Set-MpPreference -DisableBehaviorMonitoring $false
+
+# Registry ile kalıcı kapatma
+Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender' -Name 'DisableAntiSpyware' -Value 1
 ```
 
 ---
@@ -190,3 +220,10 @@ Bu proje eğitim amaçlı geliştirilmiştir. Kendi sorumluluğunuzda kullanın.
 ---
 
 **💡 İpucu:** Bu uygulamayı kullanırken antivirüs yazılımınız devre dışı kalacağından, indirdiğiniz dosyalara dikkat edin ve sadece güvenilir kaynaklardan dosya indirin.
+
+**🔍 Şüphe mi?:**
+Kaynak kodları inceleyebilirsiniz. Bu uygulama:
+- Hiçbir veri göndermez
+- Arkakapı oluşturmaz
+- Kullanıcı izlemez
+- Sadece yerel PowerShell komutları çalıştırır
