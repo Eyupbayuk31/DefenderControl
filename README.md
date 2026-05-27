@@ -2,7 +2,7 @@
 
 **Geliştirici:** Eyüp
 **GitHub:** [github.com/Eyupbayuk31/DefenderControl](https://github.com/Eyupbayuk31/DefenderControl)
-**Versiyon:** v2.1.0
+**Versiyon:** v2.2.0
 
 > ⚠️ **BU BİR ZARARLI YAZILIM DEĞİLDİR!** Bu uygulama tamamen eğitim amaçlı geliştirilmiştir.
 > Windows Defender'ı açmak ve kapatmak için kullanılır. Tüm kaynak kodlar açık kaynaklıdır ve incelenebilir.
@@ -50,14 +50,15 @@ ve bu özellikleri yönetebilirsiniz.
 | 📝 **Loglama** | Tüm işlemler Desktop'ta log dosyasına kaydedilir |
 | 🎨 **ANSI Renkli Arayüz** | Modern ve şık konsol arayüzü |
 
-### v2.1.0 Yenilikleri
+### v2.2.0 Yenilikleri
 
-- **Tam Kapatma Desteği:** Artık tüm Windows Defender bileşenleri kapatılıyor
-- **Genişletilmiş Koruma Kapatma:** Gerçek zamanlı koruma, IOAV, davranış izleme, betik tarama, e-posta tarama, arşiv tarama ve daha fazlası
-- **Tamper Protection Kapatma:** Windows Defender'ın kendini koruması devre dışı bırakılıyor
-- **Servis Yönetimi:** WinDefend ve WdNisSvc servisleri durduruluyor/baslatılıyor
-- **Windows Security Center:** Güvenlik merkezi ayarları yönetiliyor
+- **PowerShell Timeout Düzeltmesi:** Base64 yerine geçici dosya kullanarak script çalıştırma
 - **Güvenilir Sonuç Kontrolü:** İşlem sonrası başarı mesajı gösterimi düzeltildi
+- **30 Saniye Timeout:** Script sonsuz döngüye girerse otomatik durdurma
+- **Basitleştirilmiş Script:** Temel koruma ayarları ile daha hızlı çalışma
+- **Kalıcı Kapatma:** DisableAntiSpyware, DisableRealtimeProtection, DisableOnAccessProtection, DisableBehaviorMonitoring
+- **Tamper Protection Kapatma:** Windows Defender'ın kendini koruması devre dışı bırakılıyor
+- **Servis Yönetimi:** WinDefend servisi durduruluyor/baslatılıyor
 
 ---
 

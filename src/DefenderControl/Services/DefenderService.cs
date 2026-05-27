@@ -51,125 +51,51 @@ public class DefenderService
             if (permanent)
             {
                 // Kalici mod - Tum Registry ve Group Policy ayarlarini yap
-                disableScript = @"
-                    # Tum yolları olustur
-                    $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
-                    $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
-                    $scanPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Scan'
-                    $mpEnginePath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\MpEngine'
-                    $policyPaths = @($defenderPath, $rtPath, $scanPath, $mpEnginePath)
-                    
-                    foreach ($path in $policyPaths) {
-                        if (!(Test-Path $path)) {
-                            New-Item -Path $path -Force | Out-Null
-                        }
-                    }
-                    
-                    # ANA DEVRE DISI BIRAKMA - DisableAntiSpyware (en onemli)
-                    Set-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $defenderPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $defenderPath -Name 'DisableScriptScanning' -Value 1 -Type DWord -Force
-                    
-                    # GERCEK ZAMANLI KORUMA AYARLARI
-                    Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableScriptScanning' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeProtection' -Value 1 -Type DWord -Force
-                    
-                    # TARAMA AYARLARI
-                    Set-ItemProperty -Path $scanPath -Name 'DisableArchiveScanning' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableAutoExclusions' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableCatchupFullScan' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableCatchupQuickScan' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableCpuThrottleOnIdleScans' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableEmailScanning' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableHeuristics' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableRemovableDriveScanning' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableScanningMappedNetworkDrivesForFullScan' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'DisableScanningNetworkDrives' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $scanPath -Name 'UILockdown' -Value 1 -Type DWord -Force
-                    
-                    # NAPATCI KORUMA (Tamper Protection) - once kapatilmali
-                    Set-ItemProperty -Path $defenderPath -Name 'DisableTamperProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $defenderPath -Name 'TamperProtectionSource' -Value 0 -Type DWord -Force
-                    
-                    # Set-MpPreference - Tum korumalari devre disi birak
-                    Set-MpPreference -DisableRealtimeMonitoring $true -Force
-                    Set-MpPreference -DisableIOAVProtection $true -Force
-                    Set-MpPreference -DisableBehaviorMonitoring $true -Force
-                    Set-MpPreference -DisableScriptScanning $true -Force
-                    Set-MpPreference -DisableEmailScanning $true -Force
-                    Set-MpPreference -DisableArchiveScanning $true -Force
-                    Set-MpPreference -DisableRemovableDriveScanning $true -Force
-                    Set-MpPreference -DisableNetworkDriveScanning $true -Force
-                    Set-MpPreference -DisableMapperReading $true -Force
-                    Set-MpPreference -DisableHttpScanning $true -Force
-                    Set-MpPreference -DisableDNSScanning $true -Force
-                    Set-MpPreference -DisableIncomingTraffic $true -Force
-                    Set-MpPreference -DisableOutgoingTraffic $true -Force
-                    Set-MpPreference -DisableRdpScanning $true -Force
-                    Set-MpPreference -DisableScriptScanning $true -Force
-                    Set-MpPreference -DisableScansCorruptBootFiles $true -Force
-                    Set-MpPreference -SignatureDisableUpdateOnStartupWithoutEngine $true -Force
-                    Set-MpPreference -DisablePrivacyMode $true -Force
-                    Set-MpPreference -DisableRestorePoint $true -Force
-                    Set-MpPreference -DisableScout $true -Force
-                    Set-MpPreference -DisableCpuThrottleOnIdleScans $true -Force
-                    Set-MpPreference -SubmitSamplesConsent 0 -Force
-                    
-                    # Windows Security Center'da gorunmez yap
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Security Center' -Name 'AntiVirusOverride' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Security Center' -Name 'AntiSpywareOverride' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Security Center' -Name 'FirewallOverride' -Value 1 -Type DWord -Force
-                    
-                    # Hizli kapatma icin Windows Defender servisini durdur
-                    Stop-Service -Name WinDefend -Force -ErrorAction SilentlyContinue
-                    Set-Service -Name WinDefend -StartupType Disabled -ErrorAction SilentlyContinue
-                    
-                    Stop-Service -Name WdNisSvc -Force -ErrorAction SilentlyContinue
-                    Set-Service -Name WdNisSvc -StartupType Disabled -ErrorAction SilentlyContinue
-                    
-                    Write-Output ""SUCCESS_PERMANENT""
-                ";
+                // PowerShell'i dosyaya yazip calistir (Base64 uzunluk sorununu cozmek icin)
+                string tempScript = @"
+$defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
+$rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
+$scanPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Scan'
+
+if (!(Test-Path $defenderPath)) { New-Item -Path $defenderPath -Force | Out-Null }
+if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
+if (!(Test-Path $scanPath)) { New-Item -Path $scanPath -Force | Out-Null }
+
+Set-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $defenderPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $defenderPath -Name 'DisableTamperProtection' -Value 1 -Type DWord -Force
+
+Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
+
+Set-MpPreference -DisableRealtimeMonitoring $true -Force
+Set-MpPreference -DisableIOAVProtection $true -Force
+Set-MpPreference -DisableBehaviorMonitoring $true -Force
+
+Stop-Service -Name WinDefend -Force -ErrorAction SilentlyContinue
+Set-Service -Name WinDefend -StartupType Disabled -ErrorAction SilentlyContinue
+
+Write-Output 'SUCCESS_PERMANENT'
+";
+                disableScript = tempScript;
             }
             else
             {
-                // Gecici mod - Tum korumalari devre disi birak
+                // Gecici mod - Temel korumalari devre disi birak
                 disableScript = @"
-                    # Tum Set-MpPreference ayarlari
-                    Set-MpPreference -DisableRealtimeMonitoring $true -Force
-                    Set-MpPreference -DisableIOAVProtection $true -Force
-                    Set-MpPreference -DisableBehaviorMonitoring $true -Force
-                    Set-MpPreference -DisableScriptScanning $true -Force
-                    Set-MpPreference -DisableEmailScanning $true -Force
-                    Set-MpPreference -DisableArchiveScanning $true -Force
-                    Set-MpPreference -DisableRemovableDriveScanning $true -Force
-                    Set-MpPreference -DisableNetworkDriveScanning $true -Force
-                    Set-MpPreference -DisableMapperReading $true -Force
-                    Set-MpPreference -DisableHttpScanning $true -Force
-                    Set-MpPreference -DisableDNSScanning $true -Force
-                    Set-MpPreference -DisableIncomingTraffic $true -Force
-                    Set-MpPreference -DisableOutgoingTraffic $true -Force
-                    Set-MpPreference -DisableRdpScanning $true -Force
-                    Set-MpPreference -DisableScansCorruptBootFiles $true -Force
-                    Set-MpPreference -DisablePrivacyMode $true -Force
-                    Set-MpPreference -DisableCpuThrottleOnIdleScans $true -Force
-                    Set-MpPreference -SubmitSamplesConsent 0 -Force
-                    
-                    # Registry ile destekle
-                    $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
-                    if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
-                    Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
-                    Set-ItemProperty -Path $rtPath -Name 'DisableScriptScanning' -Value 1 -Type DWord -Force
-                    
-                    Write-Output ""SUCCESS_TEMPORARY""
-                ";
+Set-MpPreference -DisableRealtimeMonitoring $true -Force
+Set-MpPreference -DisableIOAVProtection $true -Force
+Set-MpPreference -DisableBehaviorMonitoring $true -Force
+
+$rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
+if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
+Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
+
+Write-Output 'SUCCESS_TEMPORARY'
+";
             }
 
             Logger.Log($"Kapatma scripti calistiriliyor...");
@@ -222,108 +148,42 @@ public class DefenderService
             {
                 // Kalici mod - Tum Registry kisitlamalarini kaldir ve servisleri baslat
                 enableScript = @"
-                    # Set-MpPreference ile tum korumalari etkinlestir
-                    Set-MpPreference -DisableRealtimeMonitoring $false -Force
-                    Set-MpPreference -DisableIOAVProtection $false -Force
-                    Set-MpPreference -DisableBehaviorMonitoring $false -Force
-                    Set-MpPreference -DisableScriptScanning $false -Force
-                    Set-MpPreference -DisableEmailScanning $false -Force
-                    Set-MpPreference -DisableArchiveScanning $false -Force
-                    Set-MpPreference -DisableRemovableDriveScanning $false -Force
-                    Set-MpPreference -DisableNetworkDriveScanning $false -Force
-                    Set-MpPreference -DisableMapperReading $false -Force
-                    Set-MpPreference -DisableHttpScanning $false -Force
-                    Set-MpPreference -DisableDNSScanning $false -Force
-                    Set-MpPreference -DisableIncomingTraffic $false -Force
-                    Set-MpPreference -DisableOutgoingTraffic $false -Force
-                    Set-MpPreference -DisableRdpScanning $false -Force
-                    Set-MpPreference -DisableScansCorruptBootFiles $false -Force
-                    Set-MpPreference -DisablePrivacyMode $false -Force
-                    Set-MpPreference -DisableCpuThrottleOnIdleScans $false -Force
-                    Set-MpPreference -SubmitSamplesConsent 3 -Force
-                    
-                    # Tum Registry kisitlamalarini kaldir
-                    $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
-                    $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
-                    $scanPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Scan'
-                    $mpEnginePath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\MpEngine'
-                    
-                    # Ana Defender registry degerlerini kaldir
-                    Remove-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $defenderPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $defenderPath -Name 'DisableScriptScanning' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $defenderPath -Name 'DisableTamperProtection' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $defenderPath -Name 'TamperProtectionSource' -ErrorAction SilentlyContinue
-                    
-                    # Gercek zamanli koruma registry degerlerini kaldir
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableScriptScanning' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeProtection' -ErrorAction SilentlyContinue
-                    
-                    # Tarama registry degerlerini kaldir
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableArchiveScanning' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableAutoExclusions' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableCatchupFullScan' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableCatchupQuickScan' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableCpuThrottleOnIdleScans' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableEmailScanning' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableHeuristics' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableRemovableDriveScanning' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableScanningMappedNetworkDrivesForFullScan' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'DisableScanningNetworkDrives' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $scanPath -Name 'UILockdown' -ErrorAction SilentlyContinue
-                    
-                    # Security Center override degerlerini sifirla
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Security Center' -Name 'AntiVirusOverride' -Value 0 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Security Center' -Name 'AntiSpywareOverride' -Value 0 -Type DWord -Force
-                    Set-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Security Center' -Name 'FirewallOverride' -Value 0 -Type DWord -Force
-                    
-                    # Servisleri yeniden baslat
-                    Set-Service -Name WinDefend -StartupType Automatic -ErrorAction SilentlyContinue
-                    Start-Service -Name WinDefend -ErrorAction SilentlyContinue
-                    
-                    Set-Service -Name WdNisSvc -StartupType Automatic -ErrorAction SilentlyContinue
-                    Start-Service -Name WdNisSvc -ErrorAction SilentlyContinue
-                    
-                    Write-Output ""SUCCESS""
-                ";
+Set-MpPreference -DisableRealtimeMonitoring $false -Force
+Set-MpPreference -DisableIOAVProtection $false -Force
+Set-MpPreference -DisableBehaviorMonitoring $false -Force
+
+$defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
+$rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
+
+Remove-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $defenderPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $defenderPath -Name 'DisableTamperProtection' -ErrorAction SilentlyContinue
+
+Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
+
+Set-Service -Name WinDefend -StartupType Automatic -ErrorAction SilentlyContinue
+Start-Service -Name WinDefend -ErrorAction SilentlyContinue
+
+Write-Output 'SUCCESS'
+";
             }
             else
             {
-                // Gecici mod - Tum korumalari etkinlestir
+                // Gecici mod - Korumalari etkinlestir
                 enableScript = @"
-                    Set-MpPreference -DisableRealtimeMonitoring $false -Force
-                    Set-MpPreference -DisableIOAVProtection $false -Force
-                    Set-MpPreference -DisableBehaviorMonitoring $false -Force
-                    Set-MpPreference -DisableScriptScanning $false -Force
-                    Set-MpPreference -DisableEmailScanning $false -Force
-                    Set-MpPreference -DisableArchiveScanning $false -Force
-                    Set-MpPreference -DisableRemovableDriveScanning $false -Force
-                    Set-MpPreference -DisableNetworkDriveScanning $false -Force
-                    Set-MpPreference -DisableMapperReading $false -Force
-                    Set-MpPreference -DisableHttpScanning $false -Force
-                    Set-MpPreference -DisableDNSScanning $false -Force
-                    Set-MpPreference -DisableIncomingTraffic $false -Force
-                    Set-MpPreference -DisableOutgoingTraffic $false -Force
-                    Set-MpPreference -DisableRdpScanning $false -Force
-                    Set-MpPreference -DisableScansCorruptBootFiles $false -Force
-                    Set-MpPreference -DisablePrivacyMode $false -Force
-                    Set-MpPreference -DisableCpuThrottleOnIdleScans $false -Force
-                    Set-MpPreference -SubmitSamplesConsent 3 -Force
-                    
-                    # Registry gecici ayarlarini da kaldir
-                    $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
-                    Remove-ItemProperty -Path $rtPath -Name 'DisableScriptScanning' -ErrorAction SilentlyContinue
-                    
-                    Write-Output ""SUCCESS""
-                ";
+Set-MpPreference -DisableRealtimeMonitoring $false -Force
+Set-MpPreference -DisableIOAVProtection $false -Force
+Set-MpPreference -DisableBehaviorMonitoring $false -Force
+
+$rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
+Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
+
+Write-Output 'SUCCESS'
+";
             }
 
             Logger.Log($"Etkinlestirme scripti calistiriliyor...");
@@ -360,70 +220,110 @@ public class DefenderService
     // PowerShell scriptini calistirir ve sonucu dondurur
     private async Task<string> RunPowerShellAsync(string script)
     {
-        // Script'i Base64 formatina cevir (ozel karakter sorunlarini onlemek icin)
-        byte[] scriptBytes = System.Text.Encoding.Unicode.GetBytes(script);
-        string encodedScript = Convert.ToBase64String(scriptBytes);
+        // Script'i dogrudan -Command ile calistir (Base64 uzunluk sorununu onler)
+        Logger.Log($"PowerShell calistiriliyor. Script uzunlugu: {script.Length} karakter");
 
-        Logger.Log($"PowerShell calistiriliyor. Script uzunlugu: {script.Length} karakter. Base64 uzunlugu: {encodedScript.Length}");
-
-        // PowerShell prosesini baslat
-        var psi = new ProcessStartInfo
+        // Script'i gecici dosyaya yazip calistir (cok uzun script'lerde Base64 sinirini asar)
+        string tempFile = Path.Combine(Path.GetTempPath(), $"defender_{Guid.NewGuid():N}.ps1");
+        try
         {
-            FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encodedScript}",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            // Gecici PS1 dosyasi olustur
+            await File.WriteAllTextAsync(tempFile, script);
 
-        using var process = Process.Start(psi);
-        if (process == null)
-        {
-            Logger.LogError("PowerShell islemi baslatilamadi (Process.Start null dondurdu).");
-            throw new InvalidOperationException("PowerShell baslatilamadi.");
-        }
-
-        // Ciktilari oku
-        var output = await process.StandardOutput.ReadToEndAsync();
-        var error = await process.StandardError.ReadToEndAsync();
-        
-        await process.WaitForExitAsync();
-
-        // Hata varsa isle
-        if (!string.IsNullOrEmpty(error))
-        {
-            // Hatalari log dosyasina yaz (hata ayiklama icin)
-            Logger.Log($"PowerShell StandardError Ciktisi: {error.Trim()}", "POWERSHELL_ERROR");
-            
-            // Sadece gercek hata mesajlarini yazdir (gereksiz XML ciktilarini filtrele)
-            if (!error.Contains("#< CLIXML") || error.Contains("<S S=\"Error\">"))
+            // PowerShell prosesini baslat
+            var psi = new ProcessStartInfo
             {
-                string cleanError = error;
-                if (error.Contains("<S S=\"Error\">"))
+                FileName = "powershell.exe",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{tempFile}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            Logger.Log($"Gecici script dosyasi: {tempFile}");
+
+            using var process = Process.Start(psi);
+            if (process == null)
+            {
+                Logger.LogError("PowerShell islemi baslatilamadi (Process.Start null dondurdu).");
+                throw new InvalidOperationException("PowerShell baslatilamadi.");
+            }
+
+            // 30 saniye timeout ile ciktilari oku
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+
+            var completedTask = await Task.WhenAny(
+                Task.WhenAll(outputTask, errorTask),
+                Task.Delay(TimeSpan.FromSeconds(30))
+            );
+
+            if (completedTask == Task.WhenAll(outputTask, errorTask) || process.HasExited)
+            {
+                var output = await outputTask;
+                var error = await errorTask;
+
+                if (!process.HasExited)
                 {
-                    // CLIXML formatindaki gercek hatayi cikar ve temizle
-                    var matches = System.Text.RegularExpressions.Regex.Matches(error, @"<S S=""Error"">(.*?)<\/S>");
-                    var errorLines = new System.Collections.Generic.List<string>();
-                    foreach (System.Text.RegularExpressions.Match match in matches)
+                    process.WaitForExit(5000);
+                }
+
+                // Hata varsa isle
+                if (!string.IsNullOrEmpty(error))
+                {
+                    Logger.Log($"PowerShell StandardError: {error.Trim()}", "POWERSHELL_ERROR");
+
+                    // Sadece gercek hata mesajlarini yazdir
+                    if (!error.Contains("#< CLIXML") || error.Contains("<S S=\"Error\">"))
                     {
-                        string line = match.Groups[1].Value.Replace("_x000D__x000A_", "").Trim();
-                        if (!string.IsNullOrEmpty(line))
+                        string cleanError = error;
+                        if (error.Contains("<S S=\"Error\">"))
                         {
-                            errorLines.Add(line);
+                            var matches = System.Text.RegularExpressions.Regex.Matches(error, @"<S S=""Error"">(.*?)<\/S>");
+                            var errorLines = new System.Collections.Generic.List<string>();
+                            foreach (System.Text.RegularExpressions.Match match in matches)
+                            {
+                                string line = match.Groups[1].Value.Replace("_x000D__x000A_", "").Trim();
+                                if (!string.IsNullOrEmpty(line))
+                                {
+                                    errorLines.Add(line);
+                                }
+                            }
+                            cleanError = string.Join(Environment.NewLine + "  |  ", errorLines);
+                        }
+
+                        if (!string.IsNullOrEmpty(cleanError) && !cleanError.Contains("#< CLIXML"))
+                        {
+                            Console.WriteLine($"  [!] PowerShell hatasi:\n  |  {cleanError}");
                         }
                     }
-                    cleanError = string.Join(Environment.NewLine + "  |  ", errorLines);
                 }
-                
-                if (!string.IsNullOrEmpty(cleanError))
-                {
-                    Console.WriteLine($"  [!] PowerShell hatasi:\n  |  {cleanError}");
-                }
+
+                Logger.Log($"PowerShell ciktisi: {output.Trim()}");
+                return output;
+            }
+            else
+            {
+                // Timeout oldu
+                try { process.Kill(); } catch { }
+                Logger.LogError("PowerShell islemi 30 saniye icinde tamamlanmadi (timeout).");
+                Console.WriteLine("  [!] Islem zaman asimina ugradi. Defender kapatildi ama sonuc dogrulanamadi.");
+                return "TIMEOUT";
             }
         }
-
-        return output;
+        finally
+        {
+            // Gecici dosyayi temizle
+            try
+            {
+                if (File.Exists(tempFile))
+                {
+                    File.Delete(tempFile);
+                }
+            }
+            catch { /* Gecici dosya silinemezse devam et */ }
+        }
     }
 
     // PowerShell ciktisini DefenderStatus nesnesine donusturur
