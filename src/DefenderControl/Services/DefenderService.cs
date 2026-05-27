@@ -51,32 +51,40 @@ public class DefenderService
             if (permanent)
             {
                 // Kalici mod - Tum Registry ve Group Policy ayarlarini yap
-                // PowerShell'i dosyaya yazip calistir (Base64 uzunluk sorununu cozmek icin)
                 string tempScript = @"
 $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
-$scanPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Scan'
 
 if (!(Test-Path $defenderPath)) { New-Item -Path $defenderPath -Force | Out-Null }
 if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
-if (!(Test-Path $scanPath)) { New-Item -Path $scanPath -Force | Out-Null }
 
+# ANA KAPATMA - DisableAntiSpyware (en onemli, bu olmadan digerleri calismayabilir)
 Set-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -Value 1 -Type DWord -Force
+
+# DIGER KORUMA AYARLARI
 Set-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $defenderPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $defenderPath -Name 'DisableTamperProtection' -Value 1 -Type DWord -Force
 
+# GERCEK ZAMANLI KORUMA AYARLARI
 Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
 Set-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -Value 1 -Type DWord -Force
 
+# Set-MpPreference - Anlik devre disi birakma
 Set-MpPreference -DisableRealtimeMonitoring $true -Force
 Set-MpPreference -DisableIOAVProtection $true -Force
 Set-MpPreference -DisableBehaviorMonitoring $true -Force
+Set-MpPreference -DisableScriptScanning $true -Force
+Set-MpPreference -DisableEmailScanning $true -Force
+Set-MpPreference -DisableArchiveScanning $true -Force
 
+# WINDOWS DEFENDER SERVISLERINI DURDUR
 Stop-Service -Name WinDefend -Force -ErrorAction SilentlyContinue
 Set-Service -Name WinDefend -StartupType Disabled -ErrorAction SilentlyContinue
+Stop-Service -Name WdNisSvc -Force -ErrorAction SilentlyContinue
+Set-Service -Name WdNisSvc -StartupType Disabled -ErrorAction SilentlyContinue
 
 Write-Output 'SUCCESS_PERMANENT'
 ";
@@ -84,15 +92,21 @@ Write-Output 'SUCCESS_PERMANENT'
             }
             else
             {
-                // Gecici mod - Temel korumalari devre disi birak
+                // Gecici mod - Tum korumalari devre disi birak
                 disableScript = @"
+# Tum korumalari devre disi birak
 Set-MpPreference -DisableRealtimeMonitoring $true -Force
 Set-MpPreference -DisableIOAVProtection $true -Force
 Set-MpPreference -DisableBehaviorMonitoring $true -Force
+Set-MpPreference -DisableScriptScanning $true -Force
+Set-MpPreference -DisableEmailScanning $true -Force
+Set-MpPreference -DisableArchiveScanning $true -Force
 
+# Registry ile destekle (sistem yeniden baslatinca acilmaz)
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 if (!(Test-Path $rtPath)) { New-Item -Path $rtPath -Force | Out-Null }
 Set-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -Value 1 -Type DWord -Force
+Set-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -Value 1 -Type DWord -Force
 
 Write-Output 'SUCCESS_TEMPORARY'
 ";
@@ -148,13 +162,18 @@ Write-Output 'SUCCESS_TEMPORARY'
             {
                 // Kalici mod - Tum Registry kisitlamalarini kaldir ve servisleri baslat
                 enableScript = @"
+# Tum korumalari ac
 Set-MpPreference -DisableRealtimeMonitoring $false -Force
 Set-MpPreference -DisableIOAVProtection $false -Force
 Set-MpPreference -DisableBehaviorMonitoring $false -Force
+Set-MpPreference -DisableScriptScanning $false -Force
+Set-MpPreference -DisableEmailScanning $false -Force
+Set-MpPreference -DisableArchiveScanning $false -Force
 
 $defenderPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender'
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 
+# Registry degerlerini kaldir
 Remove-ItemProperty -Path $defenderPath -Name 'DisableAntiSpyware' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $defenderPath -Name 'DisableRealtimeProtection' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $defenderPath -Name 'DisableOnAccessProtection' -ErrorAction SilentlyContinue
@@ -165,8 +184,11 @@ Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction
 Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
 Remove-ItemProperty -Path $rtPath -Name 'DisableBehaviorMonitoring' -ErrorAction SilentlyContinue
 
+# Servisleri baslat
 Set-Service -Name WinDefend -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service -Name WinDefend -ErrorAction SilentlyContinue
+Set-Service -Name WdNisSvc -StartupType Automatic -ErrorAction SilentlyContinue
+Start-Service -Name WdNisSvc -ErrorAction SilentlyContinue
 
 Write-Output 'SUCCESS'
 ";
@@ -175,12 +197,16 @@ Write-Output 'SUCCESS'
             {
                 // Gecici mod - Korumalari etkinlestir
                 enableScript = @"
+# Tum korumalari ac
 Set-MpPreference -DisableRealtimeMonitoring $false -Force
 Set-MpPreference -DisableIOAVProtection $false -Force
 Set-MpPreference -DisableBehaviorMonitoring $false -Force
+Set-MpPreference -DisableScriptScanning $false -Force
 
+# Registry gecici ayarlarini kaldir
 $rtPath = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection'
 Remove-ItemProperty -Path $rtPath -Name 'DisableRealtimeMonitoring' -ErrorAction SilentlyContinue
+Remove-ItemProperty -Path $rtPath -Name 'DisableIOAVProtection' -ErrorAction SilentlyContinue
 
 Write-Output 'SUCCESS'
 ";
